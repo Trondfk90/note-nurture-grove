@@ -200,7 +200,12 @@ const FolderList: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    <span className="text-sm truncate flex-1 text-sidebar-foreground">{folder.name}</span>
+                    <span className={cn(
+                      "text-sm truncate flex-1",
+                      currentFolder?.id === folder.id ? "text-black font-medium" : "text-sidebar-foreground"
+                    )}>
+                      {folder.name}
+                    </span>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
