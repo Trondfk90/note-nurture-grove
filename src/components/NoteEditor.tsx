@@ -124,17 +124,15 @@ const NoteEditor: React.FC = () => {
   const navigateToSearchResult = (result: {index: number, line: number}) => {
     if (!textareaRef.current) return;
     
-    textareaRef.current.focus();
+    const textarea = textareaRef.current.querySelector('textarea');
+    if (!textarea) return;
     
-    const startPos = result.index;
-    const endPos = startPos + searchQuery.length;
-    
-    textareaRef.current.setSelectionRange(startPos, endPos);
-    
-    const textarea = textareaRef.current;
-    const lineHeight = 1.675 * 16;
-    const targetLine = result.line;
-    textarea.scrollTop = (targetLine - 5) * lineHeight;
+    if (textarea.scrollToSearchResult) {
+      textarea.scrollToSearchResult(result.index);
+    } else {
+      textarea.focus();
+      textarea.setSelectionRange(result.index, result.index + searchQuery.length);
+    }
   };
   
   const nextSearchResult = () => {
