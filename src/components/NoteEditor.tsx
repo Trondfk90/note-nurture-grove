@@ -1,11 +1,10 @@
 
-// Import the X component from lucide-react
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X } from 'lucide-react';
+import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X, Search } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -14,6 +13,7 @@ import MarkdownPreview from './MarkdownPreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import CodeEditor from './CodeEditor';
 
 const NoteEditor: React.FC = () => {
   const {
@@ -36,6 +36,12 @@ const NoteEditor: React.FC = () => {
   const [addTagDialogOpen, setAddTagDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{index: number, line: number}[]>([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (currentNote) {
@@ -78,6 +84,80 @@ const NoteEditor: React.FC = () => {
     }
   };
 
+  const handleSearch = () => {
+    if (!searchQuery || !editedContent) return;
+    
+    const query = searchQuery.toLowerCase();
+    const content = editedContent.toLowerCase();
+    const lines = editedContent.split('\n');
+    
+    const results: {index: number, line: number}[] = [];
+    let currentIndex = 0;
+    
+    lines.forEach((line, lineIndex) => {
+      const lineLower = line.toLowerCase();
+      let position = 0;
+      
+      while (position < lineLower.length) {
+        const foundIndex = lineLower.indexOf(query, position);
+        if (foundIndex === -1) break;
+        
+        results.push({
+          index: currentIndex + foundIndex,
+          line: lineIndex + 1
+        });
+        
+        position = foundIndex + query.length;
+      }
+      
+      // Add +1 for the newline character
+      currentIndex += line.length + 1;
+    });
+    
+    setSearchResults(results);
+    setCurrentSearchIndex(0);
+    
+    if (results.length > 0) {
+      navigateToSearchResult(results[0]);
+    }
+  };
+
+  const navigateToSearchResult = (result: {index: number, line: number}) => {
+    if (!textareaRef.current) return;
+    
+    // Set focus to the textarea
+    textareaRef.current.focus();
+    
+    // Calculate the selection range
+    const startPos = result.index;
+    const endPos = startPos + searchQuery.length;
+    
+    // Set the selection range
+    textareaRef.current.setSelectionRange(startPos, endPos);
+    
+    // Ensure the selected text is visible by scrolling to it
+    const textarea = textareaRef.current;
+    const lineHeight = 1.675 * 16; // Approximate line height in pixels
+    const targetLine = result.line;
+    textarea.scrollTop = (targetLine - 5) * lineHeight; // Scroll to a few lines above the target
+  };
+  
+  const nextSearchResult = () => {
+    if (searchResults.length === 0) return;
+    
+    const nextIndex = (currentSearchIndex + 1) % searchResults.length;
+    setCurrentSearchIndex(nextIndex);
+    navigateToSearchResult(searchResults[nextIndex]);
+  };
+  
+  const prevSearchResult = () => {
+    if (searchResults.length === 0) return;
+    
+    const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
+    setCurrentSearchIndex(prevIndex);
+    navigateToSearchResult(searchResults[prevIndex]);
+  };
+
   if (!currentNote) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-secondary/30">
@@ -107,6 +187,22 @@ const NoteEditor: React.FC = () => {
           />
         </div>
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="h-8 w-8"
+                >
+                  <Search size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Search in note</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -225,6 +321,50 @@ const NoteEditor: React.FC = () => {
         </div>
       </div>
 
+      {showSearch && (
+        <div className="px-4 py-2 border-b border-border flex items-center gap-2">
+          <Input
+            placeholder="Search in note..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button variant="outline" size="sm" onClick={handleSearch}>
+            Search
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={prevSearchResult}
+            disabled={searchResults.length === 0}
+          >
+            Prev
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={nextSearchResult}
+            disabled={searchResults.length === 0}
+          >
+            Next
+          </Button>
+          {searchResults.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {currentSearchIndex + 1} of {searchResults.length}
+            </span>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={() => setShowSearch(false)}
+          >
+            <X size={16} />
+          </Button>
+        </div>
+      )}
+
       {currentNote.tags.length > 0 && (
         <div className="px-4 py-2 border-b border-border flex flex-wrap gap-1.5">
           {currentNote.tags.map((tagName) => {
@@ -275,14 +415,15 @@ const NoteEditor: React.FC = () => {
           </TabsList>
           <TabsContent value="edit" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
             <ScrollArea className="h-full">
-              <Textarea
+              <CodeEditor
                 value={editedContent}
-                onChange={(e) => {
-                  setEditedContent(e.target.value);
+                onChange={(value) => {
+                  setEditedContent(value);
                   setUnsavedChanges(true);
                 }}
-                className="w-full h-full min-h-[calc(100vh-280px)] resize-none border-0 p-4 focus-visible:ring-0 font-mono text-sm"
+                className="w-full h-full min-h-[calc(100vh-280px)]"
                 placeholder="Write your note in Markdown..."
+                disabled={!isEditing}
               />
             </ScrollArea>
           </TabsContent>
@@ -296,14 +437,15 @@ const NoteEditor: React.FC = () => {
           <TabsContent value="split" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
             <div className="grid grid-cols-2 h-full divide-x">
               <ScrollArea className="h-full">
-                <Textarea
+                <CodeEditor
                   value={editedContent}
-                  onChange={(e) => {
-                    setEditedContent(e.target.value);
+                  onChange={(value) => {
+                    setEditedContent(value);
                     setUnsavedChanges(true);
                   }}
-                  className="w-full h-full min-h-[calc(100vh-280px)] resize-none border-0 p-4 focus-visible:ring-0 font-mono text-sm"
+                  className="w-full h-full min-h-[calc(100vh-280px)]"
                   placeholder="Write your note in Markdown..."
+                  disabled={!isEditing}
                 />
               </ScrollArea>
               <ScrollArea className="h-full">

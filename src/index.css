@@ -137,4 +137,15 @@
   .smooth-transition {
     @apply transition-all duration-300 ease-in-out;
   }
+
+  /* Code editor line numbers styling */
+  .line-numbers {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    user-select: none;
+  }
+
+  /* Text highlighting for search results */
+  ::selection {
+    @apply bg-primary/30 text-foreground;
+  }
 }
