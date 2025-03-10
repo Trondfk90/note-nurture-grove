@@ -148,4 +148,13 @@
   ::selection {
     @apply bg-primary/30 text-foreground;
   }
+  
+  /* Mermaid diagram styling */
+  .mermaid {
+    @apply bg-gray-100 dark:bg-gray-800/50 p-4 rounded-md my-4;
+  }
+
+  .mermaid svg {
+    @apply mx-auto;
+  }
 }

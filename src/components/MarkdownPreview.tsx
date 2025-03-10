@@ -20,7 +20,7 @@ interface MarkdownPreviewProps {
 }
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments = [] }) => {
-  const mermaidRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const mermaidContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize mermaid
   useEffect(() => {
@@ -29,30 +29,32 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
       theme: 'default',
       securityLevel: 'loose',
     });
-    
-    // Render any mermaid diagrams
-    renderMermaidDiagrams();
-  }, [content]);
+  }, []);
   
-  const renderMermaidDiagrams = () => {
-    mermaidRefs.current.forEach((element) => {
-      if (element) {
-        try {
-          mermaid.parse(element.textContent || '');
-          const id = `mermaid-${Math.floor(Math.random() * 10000)}`;
-          
-          // Fix: Using the correct number of arguments for mermaid.render
-          mermaid.render(id, element.textContent || '').then(result => {
-            element.innerHTML = result.svg;
-          }).catch(error => {
-            console.error('Mermaid rendering error:', error);
-          });
-        } catch (error) {
-          console.error('Mermaid parsing error:', error);
+  // Render any mermaid diagrams whenever content changes or component mounts
+  useEffect(() => {
+    if (mermaidContainerRef.current) {
+      const mermaidBlocks = mermaidContainerRef.current.querySelectorAll('.mermaid');
+      
+      mermaidBlocks.forEach((element) => {
+        if (element && element.textContent) {
+          try {
+            // The id must be unique for each diagram
+            const id = `mermaid-${Math.floor(Math.random() * 100000)}`;
+            
+            mermaid.render(id, element.textContent).then(result => {
+              element.innerHTML = result.svg;
+            }).catch(error => {
+              console.error('Mermaid rendering error:', error);
+              element.innerHTML = `<div class="text-red-500">Error rendering diagram: ${error.message}</div>`;
+            });
+          } catch (error) {
+            console.error('Mermaid parsing error:', error);
+          }
         }
-      }
-    });
-  };
+      });
+    }
+  }, [content]);
 
   const CopyButton = ({ content }: { content: string }) => {
     const [copied, setCopied] = React.useState(false);
@@ -131,7 +133,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
   };
 
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
+    <div className="prose prose-sm dark:prose-invert max-w-none" ref={mermaidContainerRef}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
@@ -142,12 +144,8 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             
             // Handle mermaid diagrams
             if (match && match[1] === 'mermaid') {
-              const mermaidRef = (ref: HTMLDivElement) => {
-                mermaidRefs.current.push(ref);
-              };
-              
               return (
-                <div ref={mermaidRef} className="mermaid mt-4 mb-4">
+                <div className="mermaid relative my-4 p-4 rounded-md bg-gray-100 dark:bg-gray-800/50">
                   {codeContent}
                 </div>
               );
