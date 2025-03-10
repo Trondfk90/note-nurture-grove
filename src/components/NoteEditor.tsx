@@ -1,10 +1,11 @@
 
+// Import the X component from lucide-react
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2 } from 'lucide-react';
+import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';

@@ -3,9 +3,14 @@ import React, { useState } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileText, Folder } from 'lucide-react';
+import { Search, Plus, FileText, Folder, KeyboardIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { SearchOptions } from '@/types';
 
 const Toolbar: React.FC = () => {
   const {
@@ -20,6 +25,13 @@ const Toolbar: React.FC = () => {
   const [newNoteDialogOpen, setNewNoteDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
+  const [searchOptionsOpen, setSearchOptionsOpen] = useState(false);
+  const [searchOptions, setSearchOptions] = useState<SearchOptions>({
+    includeContent: true,
+    includeTitles: true,
+    includeTags: true,
+    caseSensitive: false,
+  });
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
@@ -39,18 +51,87 @@ const Toolbar: React.FC = () => {
     }
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleOptionChange = (option: keyof SearchOptions) => {
+    setSearchOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
+  };
+
   return (
     <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between">
       <div className="flex items-center">
         <h1 className="text-xl font-semibold mr-6">Notable</h1>
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search notes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9"
-          />
+          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center">
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <Popover open={searchOptionsOpen} onOpenChange={setSearchOptionsOpen}>
+            <Input
+              placeholder="Search notes, folders, tags... (Ctrl+K or /)"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="pl-8 pr-10 h-9"
+            />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <KeyboardIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Search options</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <PopoverContent className="w-60">
+              <div className="space-y-3">
+                <h4 className="font-medium">Search Options</h4>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="include-titles">Include titles</Label>
+                  <Switch 
+                    id="include-titles" 
+                    checked={searchOptions.includeTitles}
+                    onCheckedChange={() => handleOptionChange('includeTitles')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="include-content">Include content</Label>
+                  <Switch 
+                    id="include-content" 
+                    checked={searchOptions.includeContent}
+                    onCheckedChange={() => handleOptionChange('includeContent')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="include-tags">Include tags</Label>
+                  <Switch 
+                    id="include-tags" 
+                    checked={searchOptions.includeTags}
+                    onCheckedChange={() => handleOptionChange('includeTags')}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="case-sensitive">Case sensitive</Label>
+                  <Switch 
+                    id="case-sensitive" 
+                    checked={searchOptions.caseSensitive}
+                    onCheckedChange={() => handleOptionChange('caseSensitive')}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground pt-2">
+                  Press <kbd className="px-1 py-0.5 bg-muted rounded">Ctrl+K</kbd> or <kbd className="px-1 py-0.5 bg-muted rounded">/</kbd> to open search dialog
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       <div className="flex items-center gap-2">

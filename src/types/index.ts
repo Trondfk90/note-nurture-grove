@@ -26,3 +26,10 @@ export interface Tag {
 }
 
 export type ViewMode = 'edit' | 'preview' | 'split';
+
+export interface SearchOptions {
+  includeContent: boolean;
+  includeTitles: boolean;
+  includeTags: boolean;
+  caseSensitive: boolean;
+}
