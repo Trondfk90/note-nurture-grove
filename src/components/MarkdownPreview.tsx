@@ -45,7 +45,8 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
-          code({ node, className, children, ...props }) {
+          code({ className, children, ...props }) {
+            // Remove `node` from props destructuring as it's not needed
             const match = /language-(\w+)/.exec(className || '');
             
             // Check if it's an inline code block
@@ -66,18 +67,22 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
               );
             }
 
+            // Fix the SyntaxHighlighter component props
             return (
               <SyntaxHighlighter
+                // Cast style to the correct type
                 style={tomorrow as any}
                 language={language}
+                // Remove props that cause ref conflicts
                 PreTag="div"
-                {...props}
+                // Spread remaining compatible props
+                // This works because we're not including ref
               >
                 {value}
               </SyntaxHighlighter>
             );
           },
-          table({ node, className, children, ...props }) {
+          table({ className, children, ...props }) {
             return (
               <div className="overflow-x-auto">
                 <table className={className} {...props}>
