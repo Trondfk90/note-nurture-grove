@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Folder, Note, Tag, ViewMode, Attachment } from '@/types';
@@ -52,75 +53,412 @@ const WELCOME_NOTE: Note = {
   title: 'Welcome to Notable',
   content: `# Welcome to Notable ✨
 
-Notes are written in [GitHub-flavored Markdown](https://guides.github.com/features/mastering-markdown/), so you can write emojis (":joy:" → :joy:), ~~strikethrough~~ text etc. in a familiar fashion, additionally you can also write subscript~example~ and superscript^example^.
+Notable is a powerful, yet simple note-taking application that helps you organize your thoughts, ideas, and knowledge in a beautiful interface.
 
-[^1]: This is a footnote, you don't need to manually write it at the bottom of the document.
+## Key Features
 
-This also means that your notes aren't locked into any proprietary format.
+- **Markdown Support**: Write in GitHub-flavored Markdown with support for tables, checkboxes, and more
+- **Smart Organization**: Organize notes in folders and use tags for cross-referencing
+- **Rich Media**: Insert images, diagrams, and file attachments
+- **Advanced Formatting**: Support for math equations and diagrams
+- **Note Linking**: Create connections between your notes to build a personal knowledge network
 
-Notes can have some metadata: if they are favorited or not, which tags they have, which attachments they have, etc. These metadata are written as Markdown front matter. This is taken care of for you.
+Let's explore some of these features in detail by checking out the other notes in this Getting Started folder. Click on any note in the sidebar to view it.
 
-## Syntax Plugins
+## Basic Navigation
 
-Some syntax plugins for providing you [KaTeX](https://katex.org/), [AsciiMath](http://asciimath.org) and [Mermaid](https://github.com/knsv/mermaid) support are built-in.
+- Use the sidebar on the left to navigate between folders and notes
+- Create new notes with the + button in the sidebar
+- Toggle between edit and preview modes using the buttons in the top toolbar
+- Search for notes using the search bar at the top
 
-### KaTeX
+Happy note-taking!
+`,
+  tags: ['tutorial', 'basics'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: true,
+};
 
-Wrap a formula in \`$$\` to display it as a block:
+const MARKDOWN_NOTE: Note = {
+  id: 'markdown-note',
+  title: 'Markdown Formatting Guide',
+  content: `# Markdown Formatting Guide
 
-$$f(x) = \\int_{-\\infty}^\\infty \\hat f(\\xi)\\,e^{2 \\pi i \\xi x} \\,d\\xi$$
+Notable uses [GitHub-flavored Markdown](https://guides.github.com/features/mastering-markdown/) for note formatting. Here's a quick reference:
 
-Multi-line block formulas are supported too:
+## Basic Syntax
 
-$$
-\\begin{matrix}
-  f(\\alpha) & b     & c \\\\
-  e          & f(\\beta) & g \\\\
-  i          & j     & f(\\gamma)
-\\end{matrix}
-$$
-
-Wrap it in \`$\` to display it inline: $e^{ipi} + 1 = 0$.
-
-### AsciiMath
-
-Wrap a formula in \`\\$\$\` to display it as a block:
-
-$$sum_(i=1)^n i^3=((n(n+1))/2)^2$$
-
-Wrap it in \`\\$\` to display it inline: $e = mc^2$.
-
-### Mermaid
-
-\`\`\`mermaid
-graph TD
-  A[Christmas] -->|Get money| B(Go shopping)
-  B --> C{Let me think}
-  C -->|One| D[Laptop]
-  C -->|Two| E[iPhone]
-  C -->|Three| F[Car]
+### Headings
+\`\`\`
+# Heading 1
+## Heading 2
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
 \`\`\`
 
-### Code Highlighting
+### Emphasis
+\`\`\`
+*Italic text* or _Italic text_
+**Bold text** or __Bold text__
+~~Strikethrough~~
+\`\`\`
 
+*Italic text* | **Bold text** | ~~Strikethrough~~
+
+### Lists
+
+Unordered list:
+\`\`\`
+- Item 1
+- Item 2
+  - Nested item 1
+  - Nested item 2
+\`\`\`
+
+- Item 1
+- Item 2
+  - Nested item 1
+  - Nested item 2
+
+Ordered list:
+\`\`\`
+1. First item
+2. Second item
+3. Third item
+\`\`\`
+
+1. First item
+2. Second item
+3. Third item
+
+### Links and Images
+
+\`\`\`
+[Link text](https://example.com)
+![Alt text](image-url)
+\`\`\`
+
+### Code
+
+Inline code: \`const example = "hello world"\`
+
+Code blocks:
 \`\`\`javascript
-// This is a code block with syntax highlighting
-function sayHello(name) {
-  console.log(\`Hello, \${name}!\`);
+function sayHello() {
+  console.log("Hello, world!");
 }
-
-sayHello('world');
 \`\`\`
 
-## Create Your First Note
+### Blockquotes
 
-Click the "+" button to create a new note and start writing!
+\`\`\`
+> This is a blockquote
+> It can span multiple lines
+\`\`\`
+
+> This is a blockquote
+> It can span multiple lines
+
+### Tables
+
+\`\`\`
+| Header 1 | Header 2 | Header 3 |
+| -------- | -------- | -------- |
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+\`\`\`
+
+| Header 1 | Header 2 | Header 3 |
+| -------- | -------- | -------- |
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+### Task Lists
+
+\`\`\`
+- [x] Completed task
+- [ ] Incomplete task
+\`\`\`
+
+- [x] Completed task
+- [ ] Incomplete task
+
+## Try it yourself!
+
+Edit this note (click the pen icon) to experiment with markdown formatting.
 `,
   tags: ['tutorial', 'markdown'],
   folderId: 'demo-folder',
   createdAt: new Date(),
   updatedAt: new Date(),
-  favorite: true,
+  favorite: false,
+};
+
+const MATH_DIAGRAMS_NOTE: Note = {
+  id: 'math-diagrams-note',
+  title: 'Math & Diagrams',
+  content: `# Math Equations & Diagrams
+
+Notable supports both mathematical equations and diagrams to help you create rich, visual notes.
+
+## Mathematical Equations
+
+Notable supports [KaTeX](https://katex.org/) for mathematical equations and [AsciiMath](http://asciimath.org) for simpler math notation.
+
+### KaTeX Examples
+
+Inline equation: $E = mc^2$
+
+Block equation:
+
+$$
+\\frac{1}{\\sqrt{2\\pi\\sigma^2}} e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}
+$$
+
+Matrix:
+
+$$
+\\begin{pmatrix}
+a & b & c \\\\
+d & e & f \\\\
+g & h & i
+\\end{pmatrix}
+$$
+
+Aligned equations:
+
+$$
+\\begin{align}
+a &= b + c \\\\
+&= d + e + f + g \\\\
+&= h + i
+\\end{align}
+$$
+
+### AsciiMath Examples
+
+You can use AsciiMath for simpler notation:
+
+$sum_(i=1)^n i^3=((n(n+1))/2)^2$
+
+## Diagrams with Mermaid
+
+Notable supports [Mermaid](https://mermaid-js.github.io/mermaid/) for creating diagrams directly in your notes. Here are some examples:
+
+### Flowchart
+
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> B
+\`\`\`
+
+### Sequence Diagram
+
+\`\`\`mermaid
+sequenceDiagram
+    participant Alice
+    participant Bob
+    Alice->>Bob: Hello Bob, how are you?
+    Bob-->>Alice: I am good thanks!
+\`\`\`
+
+### Gantt Chart
+
+\`\`\`mermaid
+gantt
+    title A Gantt Diagram
+    dateFormat  YYYY-MM-DD
+    section Section
+    A task           :a1, 2023-07-01, 30d
+    Another task     :after a1, 20d
+    section Another
+    Task in sec      :2023-07-12, 12d
+    another task     :24d
+\`\`\`
+
+### Class Diagram
+
+\`\`\`mermaid
+classDiagram
+    Animal <|-- Duck
+    Animal <|-- Fish
+    Animal <|-- Zebra
+    Animal : +int age
+    Animal : +String gender
+    Animal: +isMammal()
+    Animal: +mate()
+    class Duck{
+        +String beakColor
+        +swim()
+        +quack()
+    }
+    class Fish{
+        -int sizeInFeet
+        -canEat()
+    }
+    class Zebra{
+        +bool is_wild
+        +run()
+    }
+\`\`\`
+
+## Try creating your own!
+
+Edit this note to experiment with KaTeX and Mermaid syntax.
+`,
+  tags: ['tutorial', 'advanced'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
+};
+
+const ORGANIZING_NOTE: Note = {
+  id: 'organizing-note',
+  title: 'Organizing Your Notes',
+  content: `# Organizing Your Notes
+
+Notable provides several ways to organize your notes efficiently:
+
+## Folders
+
+Folders are the primary way to organize notes by topic or project:
+
+- **Create folders**: Click the "+" button next to "Folders" in the sidebar
+- **Move notes**: Drag and drop notes between folders
+- **Rename folders**: Right-click on a folder and select "Rename"
+- **Delete folders**: Right-click on a folder and select "Delete" (this will delete all notes in the folder)
+
+## Tags
+
+Tags provide a flexible way to categorize notes across different folders:
+
+- **Add tags**: Click the tag icon in the note editor or type @ in the editor to select from existing tags
+- **Filter by tag**: Click on a tag in the sidebar to show all notes with that tag
+- **Manage tags**: Use the tag manager to create, edit, and delete tags
+
+## Favorites
+
+Mark important notes as favorites for quick access:
+
+- **Add to favorites**: Click the star icon in the note header
+- **View favorites**: Click "Favorites" in the sidebar to see all favorited notes
+
+## Search
+
+Use the search function to find notes quickly:
+
+- **Basic search**: Type in the search bar to find notes containing the search term
+- **Advanced search**: Use filters to search by tag, folder, or date
+
+## Tips for Organization
+
+1. **Create a hierarchy**: Use folders for broad categories and tags for specific themes
+2. **Use consistent naming**: Establish a naming convention for folders and tags
+3. **Regular review**: Periodically review and reorganize your notes
+4. **Archive old notes**: Move old or less relevant notes to an "Archive" folder
+5. **Use templates**: Create template notes for recurring types of information
+
+## Next Steps
+
+Try organizing the notes in this Getting Started folder by:
+1. Adding tags
+2. Marking as favorites
+3. Creating subfolders
+
+This will help you understand how to keep your notes organized as your collection grows.
+`,
+  tags: ['tutorial', 'organization'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
+};
+
+const ATTACHMENTS_NOTE: Note = {
+  id: 'attachments-note',
+  title: 'Working with Attachments',
+  content: `# Working with Attachments
+
+Notable allows you to add various types of attachments to your notes, making them more informative and useful.
+
+## Adding Attachments
+
+There are several ways to add attachments to your notes:
+
+### 1. Using the Attachment Button
+
+1. Click the paperclip icon in the toolbar
+2. Select a file from your computer
+3. The file will be uploaded and linked in your note
+
+### 2. Drag and Drop
+
+Simply drag files from your computer and drop them into the note editor.
+
+### 3. Copy and Paste
+
+Copy an image to your clipboard (e.g., a screenshot) and paste it directly into your note.
+
+### 4. Using the Attachments Manager
+
+1. Click the paperclip icon in the toolbar
+2. View all attachments in the current note
+3. Insert any existing attachment at your cursor position
+
+## Supported File Types
+
+Notable supports various file types as attachments:
+
+- **Images**: jpg, jpeg, png, gif, webp
+- **Documents**: pdf, doc, docx, txt
+- **Other**: Any file type can be attached, but only certain types can be previewed
+
+## Referencing Attachments
+
+Once you've added an attachment, you can reference it in your note using markdown syntax:
+
+\`\`\`markdown
+![Image description](@attachment/attachment-id)
+\`\`\`
+
+For non-image files:
+
+\`\`\`markdown
+[File name](@attachment/attachment-id)
+\`\`\`
+
+## Managing Attachments
+
+The Attachments Manager allows you to:
+
+- View all attachments in the current note
+- Insert attachments at your cursor position
+- Delete attachments you no longer need
+
+## Tips for Working with Attachments
+
+1. **Use descriptive names**: When adding attachments, use clear filenames
+2. **Optimize images**: Large images can slow down your note rendering
+3. **Organize attachments**: Use a consistent approach to attaching files
+4. **Back up regularly**: While attachments are stored with your notes, always keep important files backed up elsewhere
+
+## Try it out!
+
+Add an image or document to this note to see how attachments work in Notable.
+`,
+  tags: ['tutorial', 'attachments'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
 };
 
 const INITIAL_TAGS: Tag[] = [
@@ -128,6 +466,10 @@ const INITIAL_TAGS: Tag[] = [
   { id: uuidv4(), name: 'markdown', displayName: 'Markdown', color: '#2196F3' },
   { id: uuidv4(), name: 'important', displayName: 'Important', color: '#F44336' },
   { id: uuidv4(), name: 'ideas', displayName: 'Ideas', color: '#9C27B0' },
+  { id: uuidv4(), name: 'basics', displayName: 'Basics', color: '#FF9800' },
+  { id: uuidv4(), name: 'advanced', displayName: 'Advanced', color: '#607D8B' },
+  { id: uuidv4(), name: 'organization', displayName: 'Organization', color: '#795548' },
+  { id: uuidv4(), name: 'attachments', displayName: 'Attachments', color: '#009688' },
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -148,7 +490,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (folder.id === DEMO_FOLDER.id) {
           return {
             ...folder,
-            notes: [WELCOME_NOTE],
+            notes: [WELCOME_NOTE, MARKDOWN_NOTE, MATH_DIAGRAMS_NOTE, ORGANIZING_NOTE, ATTACHMENTS_NOTE],
           };
         }
         return folder;

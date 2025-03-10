@@ -25,34 +25,25 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
   // Initialize mermaid
   useEffect(() => {
     mermaid.initialize({
-      startOnLoad: false,
+      startOnLoad: true,
       theme: 'default',
       securityLevel: 'loose',
     });
   }, []);
   
-  // Render any mermaid diagrams whenever content changes or component mounts
+  // Force re-render of mermaid diagrams whenever content changes or component mounts
   useEffect(() => {
     if (mermaidContainerRef.current) {
-      const mermaidBlocks = mermaidContainerRef.current.querySelectorAll('.mermaid');
-      
-      mermaidBlocks.forEach((element) => {
-        if (element && element.textContent) {
-          try {
-            // The id must be unique for each diagram
-            const id = `mermaid-${Math.floor(Math.random() * 100000)}`;
-            
-            mermaid.render(id, element.textContent).then(result => {
-              element.innerHTML = result.svg;
-            }).catch(error => {
-              console.error('Mermaid rendering error:', error);
-              element.innerHTML = `<div class="text-red-500">Error rendering diagram: ${error.message}</div>`;
-            });
-          } catch (error) {
-            console.error('Mermaid parsing error:', error);
-          }
+      // Add a small delay to ensure the DOM is fully updated
+      const timer = setTimeout(() => {
+        try {
+          mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+        } catch (error) {
+          console.error('Mermaid initialization error:', error);
         }
-      });
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [content]);
 
@@ -145,7 +136,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             // Handle mermaid diagrams
             if (match && match[1] === 'mermaid') {
               return (
-                <div className="mermaid relative my-4 p-4 rounded-md bg-gray-100 dark:bg-gray-800/50">
+                <div className="mermaid bg-gray-100 dark:bg-gray-800/50 p-4 rounded-md my-6 relative">
                   {codeContent}
                 </div>
               );
@@ -154,7 +145,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             // Handle regular code blocks
             if (match) {
               return (
-                <div className="relative group">
+                <div className="relative group my-4">
                   <SyntaxHighlighter
                     style={dracula as any}
                     language={match[1]}
