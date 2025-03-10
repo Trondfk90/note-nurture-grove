@@ -85,22 +85,44 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       lineNumbers.scrollTop = textarea.scrollTop;
     };
 
-    // Add event listeners for all scroll-related events
-    textarea.addEventListener('scroll', syncScroll);
-    textarea.addEventListener('mousewheel', syncScroll);
-    textarea.addEventListener('DOMMouseScroll', syncScroll); // For Firefox
-    
-    // Also handle keyboard navigation that might cause scrolling
-    textarea.addEventListener('keydown', (e) => {
-      // Small delay to ensure the scroll has happened
-      setTimeout(syncScroll, 10);
+    // Create a more comprehensive scroll sync using MutationObserver
+    const observer = new MutationObserver(() => {
+      syncScroll();
     });
 
+    // Observe changes to the textarea's attributes
+    observer.observe(textarea, { 
+      attributes: true,
+      attributeFilter: ['style'] 
+    });
+
+    // Handle all scrolling events
+    const handleScroll = () => {
+      requestAnimationFrame(syncScroll);
+    };
+
+    textarea.addEventListener('scroll', handleScroll, { passive: true });
+    textarea.addEventListener('mousewheel', handleScroll, { passive: true });
+    textarea.addEventListener('DOMMouseScroll', handleScroll, { passive: true }); // Firefox
+
+    // Also sync on window resize which might affect scrolling
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    // Handle keyboard events that might cause scrolling
+    textarea.addEventListener('keydown', handleScroll, { passive: true });
+    textarea.addEventListener('keyup', handleScroll, { passive: true });
+
+    // Initial sync
+    syncScroll();
+
     return () => {
-      textarea.removeEventListener('scroll', syncScroll);
-      textarea.removeEventListener('mousewheel', syncScroll);
-      textarea.removeEventListener('DOMMouseScroll', syncScroll);
-      textarea.removeEventListener('keydown', syncScroll);
+      observer.disconnect();
+      textarea.removeEventListener('scroll', handleScroll);
+      textarea.removeEventListener('mousewheel', handleScroll);
+      textarea.removeEventListener('DOMMouseScroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      textarea.removeEventListener('keydown', handleScroll);
+      textarea.removeEventListener('keyup', handleScroll);
     };
   }, []);
 
@@ -120,7 +142,12 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       <div 
         ref={lineNumbersRef}
         className="line-numbers bg-muted/70 text-muted-foreground p-2 text-right pr-3 overflow-hidden select-none"
-        style={{ width: '3rem', overflowY: 'hidden' }}
+        style={{ 
+          width: '3rem', 
+          overflowY: 'hidden',
+          position: 'sticky',
+          left: 0 
+        }}
       >
         {lineNumbers.map((num) => (
           <div 
