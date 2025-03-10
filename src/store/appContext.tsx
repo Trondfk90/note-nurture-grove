@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Folder, Note, Tag, ViewMode } from '@/types';
@@ -15,6 +14,8 @@ interface AppContextType {
   isEditing: boolean;
   searchQuery: string;
   createFolder: (name: string, path: string) => void;
+  updateFolder: (folder: Folder) => void;
+  deleteFolder: (folderId: string) => void;
   createNote: (folderId: string, title: string, content?: string) => void;
   updateNote: (note: Note) => void;
   deleteNote: (noteId: string) => void;
@@ -23,6 +24,7 @@ interface AppContextType {
   setViewMode: (mode: ViewMode) => void;
   setIsEditing: (editing: boolean) => void;
   addTag: (name: string, color: string) => void;
+  updateTag: (tagId: string, name: string, color: string) => void;
   removeTag: (tagId: string) => void;
   addTagToNote: (noteId: string, tagName: string) => void;
   removeTagFromNote: (noteId: string, tagName: string) => void;
@@ -138,7 +140,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentTags, setCurrentTags] = useState<string[]>([]);
 
   useEffect(() => {
-    // Initialize the demo folder with the welcome note
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         if (folder.id === DEMO_FOLDER.id) {
@@ -170,6 +171,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const updateFolder = (updatedFolder: Folder) => {
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        if (folder.id === updatedFolder.id) {
+          return updatedFolder;
+        }
+        return folder;
+      });
+    });
+
+    if (currentFolder?.id === updatedFolder.id) {
+      setCurrentFolderState(updatedFolder);
+    }
+  };
+
+  const deleteFolder = (folderId: string) => {
+    const folderToDelete = folders.find((folder) => folder.id === folderId);
+    if (!folderToDelete) return;
+
+    const notesToDelete = notes.filter((note) => note.folderId === folderId);
+    setNotes((prevNotes) => prevNotes.filter((note) => note.folderId !== folderId));
+
+    setFolders((prevFolders) => prevFolders.filter((folder) => folder.id !== folderId));
+
+    if (currentFolder?.id === folderId) {
+      setCurrentFolderState(null);
+      setCurrentNoteState(null);
+    }
+
+    toast({
+      title: 'Folder Deleted',
+      description: `${folderToDelete.name} and all its notes have been deleted.`,
+    });
+  };
+
   const createNote = (folderId: string, title: string, content = '') => {
     const newNote: Note = {
       id: uuidv4(),
@@ -184,7 +220,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setNotes([...notes, newNote]);
     
-    // Update the folder with the new note
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         if (folder.id === folderId) {
@@ -219,7 +254,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update the folder with the updated note
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         if (folder.id === updatedNote.folderId) {
@@ -252,7 +286,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== noteId));
     
-    // Update the folder by removing the deleted note
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         if (folder.id === noteToDelete.folderId) {
@@ -280,7 +313,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const folder = folderId ? folders.find((f) => f.id === folderId) || null : null;
     setCurrentFolderState(folder);
     
-    // If we're changing folders, reset the current note
     if (currentFolder?.id !== folderId) {
       setCurrentNoteState(null);
     }
@@ -305,11 +337,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const updateTag = (tagId: string, name: string, color: string) => {
+    const tagToUpdate = tags.find((tag) => tag.id === tagId);
+    if (!tagToUpdate) return;
+
+    const oldTagName = tagToUpdate.name;
+    const newTagName = name.toLowerCase().replace(/\s+/g, '-');
+
+    setTags((prevTags) => {
+      return prevTags.map((tag) => {
+        if (tag.id === tagId) {
+          return {
+            ...tag,
+            name: newTagName,
+            color,
+          };
+        }
+        return tag;
+      });
+    });
+
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.tags.includes(oldTagName)) {
+          return {
+            ...note,
+            tags: note.tags.map((tag) => (tag === oldTagName ? newTagName : tag)),
+            updatedAt: new Date(),
+          };
+        }
+        return note;
+      });
+    });
+
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.tags.includes(oldTagName)) {
+            return {
+              ...note,
+              tags: note.tags.map((tag) => (tag === oldTagName ? newTagName : tag)),
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+
+    if (currentNote && currentNote.tags.includes(oldTagName)) {
+      setCurrentNoteState({
+        ...currentNote,
+        tags: currentNote.tags.map((tag) => (tag === oldTagName ? newTagName : tag)),
+        updatedAt: new Date(),
+      });
+    }
+
+    toast({
+      title: 'Tag Updated',
+      description: `Tag "${oldTagName}" has been updated to "${newTagName}".`,
+    });
+  };
+
   const removeTag = (tagId: string) => {
     const tagToRemove = tags.find((tag) => tag.id === tagId);
     if (!tagToRemove) return;
 
-    // Remove tag from all notes
     setNotes((prevNotes) => {
       return prevNotes.map((note) => {
         if (note.tags.includes(tagToRemove.name)) {
@@ -325,7 +423,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setTags((prevTags) => prevTags.filter((tag) => tag.id !== tagId));
 
-    // Update folders with updated notes
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         const updatedNotes = folder.notes.map((note) => {
@@ -355,9 +452,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTagToNote = (noteId: string, tagName: string) => {
     const formattedTagName = tagName.toLowerCase().replace(/\s+/g, '-');
 
-    // Create the tag if it doesn't exist
     if (!tags.some((tag) => tag.name === formattedTagName)) {
-      // Generate a random color for the tag
       const colors = ['#4CAF50', '#2196F3', '#F44336', '#9C27B0', '#FF9800', '#795548', '#607D8B'];
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
       addTag(formattedTagName, randomColor);
@@ -376,7 +471,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update folders with updated notes
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         const updatedNotes = folder.notes.map((note) => {
@@ -397,7 +491,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update current note if needed
     if (currentNote?.id === noteId) {
       setCurrentNoteState((prevNote) => {
         if (prevNote && !prevNote.tags.includes(formattedTagName)) {
@@ -426,7 +519,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update folders with updated notes
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         const updatedNotes = folder.notes.map((note) => {
@@ -447,7 +539,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update current note if needed
     if (currentNote?.id === noteId) {
       setCurrentNoteState((prevNote) => {
         if (prevNote) {
@@ -476,7 +567,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update folders with updated notes
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         const updatedNotes = folder.notes.map((note) => {
@@ -497,7 +587,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
-    // Update current note if needed
     if (currentNote?.id === noteId) {
       setCurrentNoteState((prevNote) => {
         if (prevNote) {
@@ -512,7 +601,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Filter notes based on search query and selected tags
   const filteredNotes = notes.filter((note) => {
     const matchesSearch = searchQuery
       ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -540,6 +628,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isEditing,
     searchQuery,
     createFolder,
+    updateFolder,
+    deleteFolder,
     createNote,
     updateNote,
     deleteNote,
@@ -548,6 +638,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setViewMode,
     setIsEditing,
     addTag,
+    updateTag,
     removeTag,
     addTagToNote,
     removeTagFromNote,

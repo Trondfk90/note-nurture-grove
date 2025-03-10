@@ -1,19 +1,24 @@
 
 import React, { useState } from 'react';
-import { Hash, Plus, X } from 'lucide-react';
+import { Hash, Plus, X, Edit, MoreVertical, Check, Trash } from 'lucide-react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
 
 const TagList: React.FC = () => {
-  const { tags, currentTags, removeTag, addTag } = useAppContext();
+  const { tags, currentTags, removeTag, addTag, updateTag } = useAppContext();
   const [newTagDialogOpen, setNewTagDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#4CAF50');
   const [selectedTags, setSelectedTags] = useState<string[]>(currentTags);
+  const [renamingTag, setRenamingTag] = useState<string | null>(null);
+  const [renameTagValue, setRenameTagValue] = useState('');
+  const [renameTagColor, setRenameTagColor] = useState('');
 
   const handleCreateTag = () => {
     if (newTagName.trim()) {
@@ -29,6 +34,30 @@ const TagList: React.FC = () => {
     } else {
       setSelectedTags([...selectedTags, tagName]);
     }
+  };
+
+  const handleRenameTag = (tagId: string) => {
+    const tag = tags.find(t => t.id === tagId);
+    if (tag) {
+      setRenamingTag(tagId);
+      setRenameTagValue(tag.name);
+      setRenameTagColor(tag.color);
+    }
+  };
+
+  const handleSaveRenameTag = (tagId: string) => {
+    if (renameTagValue.trim()) {
+      const tag = tags.find(t => t.id === tagId);
+      if (tag) {
+        const formattedTagName = renameTagValue.toLowerCase().replace(/\s+/g, '-');
+        updateTag(tagId, formattedTagName, renameTagColor);
+        toast({
+          title: "Tag renamed",
+          description: `Tag has been renamed to ${formattedTagName}`,
+        });
+      }
+    }
+    setRenamingTag(null);
   };
 
   return (
@@ -57,23 +86,82 @@ const TagList: React.FC = () => {
                 )}
                 onClick={() => handleTagClick(tag.name)}
               >
-                <div
-                  className="w-3 h-3 rounded-full mr-2"
-                  style={{ backgroundColor: tag.color }}
-                />
-                <Hash size={14} className="mr-1.5" />
-                <span className="text-sm truncate flex-1">{tag.name}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeTag(tag.id);
-                  }}
-                >
-                  <X size={14} />
-                </Button>
+                {renamingTag === tag.id ? (
+                  <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex-1 flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={renameTagColor}
+                        onChange={(e) => setRenameTagColor(e.target.value)}
+                        className="h-5 w-5 rounded-md cursor-pointer border border-input"
+                      />
+                      <Input
+                        value={renameTagValue}
+                        onChange={(e) => setRenameTagValue(e.target.value)}
+                        className="h-7 text-sm py-0 px-1 flex-1"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveRenameTag(tag.id);
+                          if (e.key === 'Escape') setRenamingTag(null);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 ml-1 p-0"
+                      onClick={() => handleSaveRenameTag(tag.id)}
+                    >
+                      <Check size={14} className="text-green-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setRenamingTag(null)}
+                    >
+                      <X size={14} className="text-red-600" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    <Hash size={14} className="mr-1.5" />
+                    <span className="text-sm truncate flex-1">{tag.name}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical size={14} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => handleRenameTag(tag.id)}>
+                          <Edit size={14} className="mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600 focus:text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeTag(tag.id);
+                          }}
+                        >
+                          <Trash size={14} className="mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                )}
               </div>
             ))
           ) : (

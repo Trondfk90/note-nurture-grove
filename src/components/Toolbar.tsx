@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileText, Folder, KeyboardIcon } from 'lucide-react';
+import { Search, Plus, FileText, Folder, KeyboardIcon, Desktop } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -65,7 +65,10 @@ const Toolbar: React.FC = () => {
   return (
     <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between">
       <div className="flex items-center">
-        <h1 className="text-xl font-semibold mr-6">TFK Notes</h1>
+        <div className="flex items-center mr-6">
+          <Desktop className="h-5 w-5 mr-2 text-primary" />
+          <h1 className="text-xl font-semibold">TFK Notes</h1>
+        </div>
         <div className="relative flex-1 max-w-sm">
           <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center">
             <Search className="h-4 w-4 text-muted-foreground" />
@@ -139,7 +142,7 @@ const Toolbar: React.FC = () => {
           variant="outline"
           size="sm"
           onClick={() => setNewFolderDialogOpen(true)}
-          className={cn("text-xs", !currentFolder && "pointer-events-none opacity-50")}
+          className="text-xs"
         >
           <Folder className="h-4 w-4 mr-1" />
           New Folder

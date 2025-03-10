@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star } from 'lucide-react';
+import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star, Edit, MoreVertical, Trash, Check, X } from 'lucide-react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from '@/components/ui/use-toast';
 
 const FolderList: React.FC = () => {
   const {
@@ -17,6 +19,10 @@ const FolderList: React.FC = () => {
     setCurrentNote,
     createFolder,
     createNote,
+    updateFolder,
+    deleteFolder,
+    updateNote,
+    deleteNote,
   } = useAppContext();
 
   const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
@@ -24,6 +30,10 @@ const FolderList: React.FC = () => {
   const [newNoteDialogOpen, setNewNoteDialogOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
+  const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
+  const [renamingNote, setRenamingNote] = useState<string | null>(null);
+  const [renameFolderValue, setRenameFolderValue] = useState('');
+  const [renameNoteValue, setRenameNoteValue] = useState('');
 
   const toggleFolder = (folderId: string) => {
     setIsOpen((prev) => ({
@@ -50,6 +60,70 @@ const FolderList: React.FC = () => {
     }
   };
 
+  const handleRenameFolder = (folderId: string) => {
+    const folder = folders.find(f => f.id === folderId);
+    if (folder) {
+      setRenamingFolder(folderId);
+      setRenameFolderValue(folder.name);
+    }
+  };
+
+  const handleSaveRenameFolder = (folderId: string) => {
+    if (renameFolderValue.trim()) {
+      const folder = folders.find(f => f.id === folderId);
+      if (folder) {
+        updateFolder({ 
+          ...folder, 
+          name: renameFolderValue,
+          updatedAt: new Date() 
+        });
+        toast({
+          title: "Folder renamed",
+          description: `Folder has been renamed to ${renameFolderValue}`,
+        });
+      }
+    }
+    setRenamingFolder(null);
+  };
+
+  const handleRenameNote = (noteId: string) => {
+    const note = currentFolder?.notes.find(n => n.id === noteId);
+    if (note) {
+      setRenamingNote(noteId);
+      setRenameNoteValue(note.title);
+    }
+  };
+
+  const handleSaveRenameNote = (noteId: string) => {
+    if (renameNoteValue.trim()) {
+      const note = currentFolder?.notes.find(n => n.id === noteId);
+      if (note) {
+        updateNote({ 
+          ...note, 
+          title: renameNoteValue,
+          updatedAt: new Date() 
+        });
+        toast({
+          title: "Note renamed",
+          description: `Note has been renamed to ${renameNoteValue}`,
+        });
+      }
+    }
+    setRenamingNote(null);
+  };
+
+  const handleDeleteFolder = (folderId: string) => {
+    if (window.confirm("Are you sure you want to delete this folder and all its notes?")) {
+      deleteFolder(folderId);
+    }
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    if (window.confirm("Are you sure you want to delete this note?")) {
+      deleteNote(noteId);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="p-4 border-b border-sidebar-border flex justify-between items-center">
@@ -70,7 +144,7 @@ const FolderList: React.FC = () => {
             <div key={folder.id} className="mb-1">
               <div
                 className={cn(
-                  "flex items-center p-2 rounded-md cursor-pointer hover:bg-sidebar-accent group",
+                  "flex items-center p-2 rounded-md hover:bg-sidebar-accent group",
                   currentFolder?.id === folder.id && "bg-sidebar-accent"
                 )}
                 onClick={() => {
@@ -93,20 +167,67 @@ const FolderList: React.FC = () => {
                     <ChevronRight size={14} />
                   )}
                 </Button>
-                <FolderIcon size={16} className="mr-2" />
-                <span className="text-sm truncate flex-1">{folder.name}</span>
-                {currentFolder?.id === folder.id && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setNewNoteDialogOpen(true);
-                    }}
-                  >
-                    <Plus size={14} />
-                  </Button>
+                <FolderIcon size={16} className="mr-2 text-sidebar-foreground" />
+                
+                {renamingFolder === folder.id ? (
+                  <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
+                    <Input
+                      value={renameFolderValue}
+                      onChange={(e) => setRenameFolderValue(e.target.value)}
+                      className="h-7 text-sm py-0 px-1 flex-1"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveRenameFolder(folder.id);
+                        if (e.key === 'Escape') setRenamingFolder(null);
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 ml-1 p-0"
+                      onClick={() => handleSaveRenameFolder(folder.id)}
+                    >
+                      <Check size={14} className="text-green-600" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setRenamingFolder(null)}
+                    >
+                      <X size={14} className="text-red-600" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-sm truncate flex-1 text-sidebar-foreground">{folder.name}</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical size={14} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem onClick={() => handleRenameFolder(folder.id)}>
+                          <Edit size={14} className="mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600 focus:text-red-600" 
+                          onClick={() => handleDeleteFolder(folder.id)}
+                        >
+                          <Trash size={14} className="mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
                 )}
               </div>
 
@@ -117,15 +238,75 @@ const FolderList: React.FC = () => {
                       <div
                         key={note.id}
                         className={cn(
-                          "flex items-center p-2 rounded-md cursor-pointer hover:bg-sidebar-accent/50 text-sm",
+                          "flex items-center p-2 rounded-md cursor-pointer hover:bg-sidebar-accent/50 text-sm group",
                           currentNote?.id === note.id && "bg-sidebar-accent/50"
                         )}
                         onClick={() => setCurrentNote(note.id)}
                       >
-                        <FileText size={14} className="mr-2" />
-                        <span className="truncate flex-1">{note.title}</span>
-                        {note.favorite && (
-                          <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                        <FileText size={14} className="mr-2 text-sidebar-foreground" />
+                        
+                        {renamingNote === note.id ? (
+                          <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={renameNoteValue}
+                              onChange={(e) => setRenameNoteValue(e.target.value)}
+                              className="h-7 text-sm py-0 px-1 flex-1"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveRenameNote(note.id);
+                                if (e.key === 'Escape') setRenamingNote(null);
+                              }}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 ml-1 p-0"
+                              onClick={() => handleSaveRenameNote(note.id)}
+                            >
+                              <Check size={14} className="text-green-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setRenamingNote(null)}
+                            >
+                              <X size={14} className="text-red-600" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="truncate flex-1 text-sidebar-foreground">{note.title}</span>
+                            {note.favorite && (
+                              <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical size={14} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem onClick={() => handleRenameNote(note.id)}>
+                                  <Edit size={14} className="mr-2" />
+                                  Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-red-600 focus:text-red-600" 
+                                  onClick={() => handleDeleteNote(note.id)}
+                                >
+                                  <Trash size={14} className="mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
                         )}
                       </div>
                     ))
