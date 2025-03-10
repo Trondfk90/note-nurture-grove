@@ -85,8 +85,23 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       lineNumbers.scrollTop = textarea.scrollTop;
     };
 
+    // Add event listeners for all scroll-related events
     textarea.addEventListener('scroll', syncScroll);
-    return () => textarea.removeEventListener('scroll', syncScroll);
+    textarea.addEventListener('mousewheel', syncScroll);
+    textarea.addEventListener('DOMMouseScroll', syncScroll); // For Firefox
+    
+    // Also handle keyboard navigation that might cause scrolling
+    textarea.addEventListener('keydown', (e) => {
+      // Small delay to ensure the scroll has happened
+      setTimeout(syncScroll, 10);
+    });
+
+    return () => {
+      textarea.removeEventListener('scroll', syncScroll);
+      textarea.removeEventListener('mousewheel', syncScroll);
+      textarea.removeEventListener('DOMMouseScroll', syncScroll);
+      textarea.removeEventListener('keydown', syncScroll);
+    };
   }, []);
 
   // Initial line count
