@@ -25,7 +25,17 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
   useEffect(() => {
     // Re-process mermaid diagrams after markdown rendering
     setTimeout(() => {
-      mermaid.init('.mermaid');
+      try {
+        // Explicitly define type for mermaid.init
+        const initFunction = mermaid.init as (
+          config?: string | undefined,
+          nodes?: string | Element | NodeListOf<Element> | undefined
+        ) => void;
+        
+        initFunction(undefined, '.mermaid');
+      } catch (error) {
+        console.error('Error initializing mermaid diagrams:', error);
+      }
     }, 100);
   }, [content]);
 
