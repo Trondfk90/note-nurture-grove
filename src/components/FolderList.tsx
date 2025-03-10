@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star, Edit, MoreVertical, Trash, Check, X } from 'lucide-react';
 import { useAppContext } from '@/store/appContext';
@@ -44,8 +43,6 @@ const FolderList: React.FC = () => {
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
-      // In a real app, you'd pick a path via a file dialog
-      // For this demo, we'll just use a dummy path
       createFolder(newFolderName, `/MyNotable/${newFolderName}`);
       setNewFolderName('');
       setNewFolderDialogOpen(false);
@@ -255,86 +252,108 @@ const FolderList: React.FC = () => {
               {isOpen[folder.id] && (
                 <div className="ml-4 pl-2 border-l border-sidebar-border">
                   {folder.notes.length > 0 ? (
-                    folder.notes.map((note) => (
-                      <div
-                        key={note.id}
-                        className={cn(
-                          "flex items-center p-2 rounded-md cursor-pointer hover:bg-sidebar-accent/50 text-sm group",
-                          currentNote?.id === note.id && "bg-sidebar-accent/50"
-                        )}
-                        onClick={() => setCurrentNote(note.id)}
+                    <>
+                      {folder.notes.map((note) => (
+                        <div
+                          key={note.id}
+                          className={cn(
+                            "flex items-center p-2 rounded-md cursor-pointer hover:bg-sidebar-accent/50 text-sm group",
+                            currentNote?.id === note.id && "bg-sidebar-accent/50"
+                          )}
+                          onClick={() => setCurrentNote(note.id)}
+                        >
+                          <FileText size={14} className="mr-2 text-sidebar-foreground" />
+                          
+                          {renamingNote === note.id ? (
+                            <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
+                              <Input
+                                value={renameNoteValue}
+                                onChange={(e) => setRenameNoteValue(e.target.value)}
+                                className="h-7 text-sm py-0 px-1 flex-1"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleSaveRenameNote(note.id);
+                                  if (e.key === 'Escape') setRenamingNote(null);
+                                }}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 ml-1 p-0"
+                                onClick={() => handleSaveRenameNote(note.id)}
+                              >
+                                <Check size={14} className="text-green-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 p-0"
+                                onClick={() => setRenamingNote(null)}
+                              >
+                                <X size={14} className="text-red-600" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="truncate flex-1 text-sidebar-foreground">{note.title}</span>
+                              {note.favorite && (
+                                <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                              )}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical size={14} />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem onClick={() => handleRenameNote(note.id)}>
+                                    <Edit size={14} className="mr-2" />
+                                    Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    className="text-red-600 focus:text-red-600" 
+                                    onClick={() => handleDeleteNote(note.id)}
+                                  >
+                                    <Trash size={14} className="mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-sidebar-foreground hover:text-black flex items-center justify-center"
+                        onClick={() => setNewNoteDialogOpen(true)}
                       >
-                        <FileText size={14} className="mr-2 text-sidebar-foreground" />
-                        
-                        {renamingNote === note.id ? (
-                          <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              value={renameNoteValue}
-                              onChange={(e) => setRenameNoteValue(e.target.value)}
-                              className="h-7 text-sm py-0 px-1 flex-1"
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveRenameNote(note.id);
-                                if (e.key === 'Escape') setRenamingNote(null);
-                              }}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 ml-1 p-0"
-                              onClick={() => handleSaveRenameNote(note.id)}
-                            >
-                              <Check size={14} className="text-green-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 p-0"
-                              onClick={() => setRenamingNote(null)}
-                            >
-                              <X size={14} className="text-red-600" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <span className="truncate flex-1 text-sidebar-foreground">{note.title}</span>
-                            {note.favorite && (
-                              <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreVertical size={14} />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem onClick={() => handleRenameNote(note.id)}>
-                                  <Edit size={14} className="mr-2" />
-                                  Rename
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  className="text-red-600 focus:text-red-600" 
-                                  onClick={() => handleDeleteNote(note.id)}
-                                >
-                                  <Trash size={14} className="mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </>
-                        )}
-                      </div>
-                    ))
+                        <Plus size={14} className="mr-1" />
+                        New Note
+                      </Button>
+                    </>
                   ) : (
-                    <div className="py-2 px-2 text-sm text-sidebar-foreground/60 italic">
-                      No notes yet
-                    </div>
+                    <>
+                      <div className="py-2 px-2 text-sm text-sidebar-foreground/60 italic">
+                        No notes yet
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-1 text-sidebar-foreground hover:text-black flex items-center justify-center"
+                        onClick={() => setNewNoteDialogOpen(true)}
+                      >
+                        <Plus size={14} className="mr-1" />
+                        New Note
+                      </Button>
+                    </>
                   )}
                 </div>
               )}
