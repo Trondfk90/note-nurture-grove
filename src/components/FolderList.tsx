@@ -145,7 +145,7 @@ const FolderList: React.FC = () => {
               <div
                 className={cn(
                   "flex items-center p-2 rounded-md hover:bg-sidebar-accent group",
-                  currentFolder?.id === folder.id && "bg-sidebar-accent"
+                  currentFolder?.id === folder.id && "bg-sidebar-accent",
                 )}
                 onClick={() => {
                   setCurrentFolder(folder.id);
@@ -155,7 +155,11 @@ const FolderList: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 mr-1 p-0 hover:bg-transparent"
+                  className={cn(
+                    "h-5 w-5 mr-1 p-0 hover:bg-transparent",
+                    "text-sidebar-foreground group-hover:text-black",
+                    currentFolder?.id === folder.id && "text-black"
+                  )}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleFolder(folder.id);
@@ -167,7 +171,14 @@ const FolderList: React.FC = () => {
                     <ChevronRight size={14} />
                   )}
                 </Button>
-                <FolderIcon size={16} className="mr-2 text-sidebar-foreground" />
+                <FolderIcon 
+                  size={16} 
+                  className={cn(
+                    "mr-2",
+                    "text-sidebar-foreground group-hover:text-black",
+                    currentFolder?.id === folder.id && "text-black"
+                  )} 
+                />
                 
                 {renamingFolder === folder.id ? (
                   <div className="flex items-center flex-1" onClick={(e) => e.stopPropagation()}>
@@ -202,7 +213,8 @@ const FolderList: React.FC = () => {
                   <>
                     <span className={cn(
                       "text-sm truncate flex-1",
-                      currentFolder?.id === folder.id ? "text-black font-medium" : "text-sidebar-foreground"
+                      "text-sidebar-foreground group-hover:text-black",
+                      currentFolder?.id === folder.id && "text-black"
                     )}>
                       {folder.name}
                     </span>
@@ -211,7 +223,11 @@ const FolderList: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50"
+                          className={cn(
+                            "h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity p-0 hover:bg-sidebar-accent/50",
+                            "text-sidebar-foreground group-hover:text-black",
+                            currentFolder?.id === folder.id && "text-black"
+                          )}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical size={14} />
