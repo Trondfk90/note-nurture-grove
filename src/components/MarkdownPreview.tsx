@@ -39,16 +39,16 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
       if (element) {
         try {
           mermaid.parse(element.textContent || '');
-          mermaid.render(
-            `mermaid-${Math.floor(Math.random() * 10000)}`,
-            element.textContent || '',
-            (svgCode) => {
-              element.innerHTML = svgCode;
-            },
-            element
-          );
+          const id = `mermaid-${Math.floor(Math.random() * 10000)}`;
+          
+          // Fix: Using the correct number of arguments for mermaid.render
+          mermaid.render(id, element.textContent || '').then(result => {
+            element.innerHTML = result.svg;
+          }).catch(error => {
+            console.error('Mermaid rendering error:', error);
+          });
         } catch (error) {
-          console.error('Mermaid rendering error:', error);
+          console.error('Mermaid parsing error:', error);
         }
       }
     });
