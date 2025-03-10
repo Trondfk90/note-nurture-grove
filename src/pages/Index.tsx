@@ -157,7 +157,7 @@ const SearchCommandPalette = () => {
 };
 
 const Index: React.FC = () => {
-  const [isTagsOpen, setIsTagsOpen] = useState(true);
+  const [isTagsOpen, setIsTagsOpen] = useState(false);
 
   return (
     <AppProvider>
