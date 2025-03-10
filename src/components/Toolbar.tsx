@@ -65,7 +65,7 @@ const Toolbar: React.FC = () => {
   return (
     <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between">
       <div className="flex items-center">
-        <h1 className="text-xl font-semibold mr-6">Notable</h1>
+        <h1 className="text-xl font-semibold mr-6">TFK Notes</h1>
         <div className="relative flex-1 max-w-sm">
           <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center">
             <Search className="h-4 w-4 text-muted-foreground" />

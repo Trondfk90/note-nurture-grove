@@ -1,4 +1,7 @@
-# Welcome to your Lovable project
+
+# TFK Notes - Markdown Note Editor
+
+A beautiful markdown note editor with support for GitHub Flavored Markdown, KaTeX, and Mermaid diagrams.
 
 ## Project info
 
@@ -52,7 +55,7 @@ npm run dev
 
 ## What technologies are used for this project?
 
-This project is built with .
+This project is built with:
 
 - Vite
 - TypeScript
