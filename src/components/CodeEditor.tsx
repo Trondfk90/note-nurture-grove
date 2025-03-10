@@ -75,80 +75,41 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
     setCursorColumn(linesBeforeCursor[linesBeforeCursor.length - 1].length + 1);
   };
 
-  // Completely new approach to scroll syncing
+  // Handle scroll synchronization
   useEffect(() => {
     const textarea = textareaRef.current;
     const lineNumbers = lineNumbersRef.current;
-    const container = editorContainerRef.current;
-
-    if (!textarea || !lineNumbers || !container) return;
-
-    // This function synchronizes line numbers with textarea scrolling
+    
+    if (!textarea || !lineNumbers) return;
+    
+    // Function to sync line numbers scroll with textarea scroll
     const syncScroll = () => {
-      if (lineNumbers) {
-        lineNumbers.scrollTop = textarea.scrollTop;
-      }
-    };
-
-    // Use an IntersectionObserver to detect when the editor is in view
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        syncScroll(); // Initial sync when visible
-      }
-    });
-    
-    observer.observe(container);
-
-    // Create a wheel event handler on the entire container
-    const handleWheel = (e: WheelEvent) => {
-      // When wheel event happens anywhere in the editor, sync the scroll
-      requestAnimationFrame(syncScroll);
-    };
-
-    // Attach the wheel handler to the container
-    container.addEventListener('wheel', handleWheel, { passive: true });
-    
-    // Also handle regular scroll events on the textarea
-    const handleTextareaScroll = () => {
-      requestAnimationFrame(syncScroll);
+      lineNumbers.scrollTop = textarea.scrollTop;
     };
     
-    textarea.addEventListener('scroll', handleTextareaScroll, { passive: true });
+    // Handle all events that might cause scrolling
+    textarea.addEventListener('scroll', syncScroll, { passive: true });
+    textarea.addEventListener('mousewheel', syncScroll, { passive: true });
+    textarea.addEventListener('DOMMouseScroll', syncScroll, { passive: true }); // Firefox
     
-    // Handle keyboard events that might cause scrolling
-    const handleKeyEvents = () => {
-      requestAnimationFrame(syncScroll);
-    };
+    // Also add wheel event to the container to catch all scroll events
+    const container = editorContainerRef.current;
+    if (container) {
+      container.addEventListener('wheel', () => {
+        requestAnimationFrame(syncScroll);
+      }, { passive: true });
+    }
     
-    textarea.addEventListener('keydown', handleKeyEvents, { passive: true });
-    textarea.addEventListener('keyup', handleKeyEvents, { passive: true });
-    
-    // Handle mousedown events that might lead to scrolling (drag to scroll)
-    textarea.addEventListener('mousedown', () => {
-      // Use an interval during mouse down to sync scrolls during drag operations
-      const scrollInterval = setInterval(syncScroll, 10);
-      
-      const clearScrollInterval = () => {
-        clearInterval(scrollInterval);
-        window.removeEventListener('mouseup', clearScrollInterval);
-      };
-      
-      window.addEventListener('mouseup', clearScrollInterval, { once: true });
-    });
-    
-    // Also sync on window resize
-    window.addEventListener('resize', syncScroll, { passive: true });
-    
-    // Perform initial sync
+    // Initial sync
     syncScroll();
     
     return () => {
-      observer.disconnect();
-      container.removeEventListener('wheel', handleWheel);
-      textarea.removeEventListener('scroll', handleTextareaScroll);
-      textarea.removeEventListener('keydown', handleKeyEvents);
-      textarea.removeEventListener('keyup', handleKeyEvents);
-      window.removeEventListener('resize', syncScroll);
+      textarea.removeEventListener('scroll', syncScroll);
+      textarea.removeEventListener('mousewheel', syncScroll);
+      textarea.removeEventListener('DOMMouseScroll', syncScroll);
+      if (container) {
+        container.removeEventListener('wheel', syncScroll);
+      }
     };
   }, []);
 
@@ -165,15 +126,18 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
     <div 
       ref={editorContainerRef}
       className={cn("editor-container relative font-mono flex", className)}
+      style={{ position: 'relative' }}
     >
       <div 
         ref={lineNumbersRef}
         className="line-numbers bg-muted/70 text-muted-foreground p-2 text-right pr-3 overflow-hidden select-none"
         style={{ 
-          width: '3rem', 
-          overflowY: 'hidden',
-          position: 'sticky',
+          width: '3rem',
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
           left: 0,
+          overflowY: 'hidden',
           zIndex: 10
         }}
       >
@@ -189,18 +153,20 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
           </div>
         ))}
       </div>
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={handleChange}
-        onClick={handleSelect}
-        onKeyUp={handleSelect}
-        onSelect={handleSelect}
-        placeholder={placeholder}
-        className="flex-1 resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
-        style={{ minHeight: '100%' }}
-        disabled={disabled}
-      />
+      <div className="flex-1" style={{ marginLeft: '3rem' }}>
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onClick={handleSelect}
+          onKeyUp={handleSelect}
+          onSelect={handleSelect}
+          placeholder={placeholder}
+          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
+          style={{ minHeight: '100%' }}
+          disabled={disabled}
+        />
+      </div>
       <div className="absolute bottom-2 right-2 bg-muted px-2 py-0.5 text-xs rounded text-muted-foreground">
         Line {cursorLine}, Column {cursorColumn}
       </div>
