@@ -3,17 +3,17 @@ import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X, Search, Plus, Tags } from 'lucide-react';
+import { Eye, Edit2, Star, StarOff, Save, Trash2, X, Search, Plus, Tags, Paperclip, Image, ExternalLink } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Note } from '@/types';
+import { Attachment, Note } from '@/types';
 import MarkdownPreview from './MarkdownPreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import CodeEditor from './CodeEditor';
+import CodeEditor, { CodeEditorRef } from './CodeEditor';
 import ManageTags from './ManageTags';
 
 const NoteEditor: React.FC = () => {
@@ -29,6 +29,8 @@ const NoteEditor: React.FC = () => {
     addTagToNote,
     removeTagFromNote,
     toggleFavorite,
+    addAttachment,
+    deleteAttachment,
   } = useAppContext();
 
   const [editedTitle, setEditedTitle] = useState('');
@@ -42,8 +44,9 @@ const NoteEditor: React.FC = () => {
   const [searchResults, setSearchResults] = useState<{index: number, line: number}[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [manageTagsOpen, setManageTagsOpen] = useState(false);
-  
-  const textareaRef = useRef<HTMLDivElement>(null);
+  const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
+  const textareaRef = useRef<CodeEditorRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (currentNote) {
@@ -125,20 +128,7 @@ const NoteEditor: React.FC = () => {
 
   const navigateToSearchResult = (result: {index: number, line: number}) => {
     if (!textareaRef.current) return;
-    
-    const scrollToFn = textareaRef.current.scrollToSearchResult;
-    if (scrollToFn && typeof scrollToFn === 'function') {
-      scrollToFn(result.index);
-    } else {
-      const editorElement = textareaRef.current.querySelector('textarea');
-      if (editorElement) {
-        editorElement.focus();
-        editorElement.setSelectionRange(result.index, result.index + searchQuery.length);
-        
-        const lineHeight = 1.675 * 16;
-        editorElement.scrollTop = (result.line - 5) * lineHeight;
-      }
-    }
+    textareaRef.current.scrollToSearchResult(result.index, searchQuery.length);
   };
   
   const nextSearchResult = () => {
@@ -155,6 +145,127 @@ const NoteEditor: React.FC = () => {
     const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
     setCurrentSearchIndex(prevIndex);
     navigateToSearchResult(searchResults[prevIndex]);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (!currentNote || !isEditing) return;
+    
+    const clipboardItems = e.clipboardData.items;
+    let hasHandledImage = false;
+    
+    for (let i = 0; i < clipboardItems.length; i++) {
+      if (clipboardItems[i].type.indexOf('image') === 0) {
+        e.preventDefault();
+        
+        const blob = clipboardItems[i].getAsFile();
+        if (!blob) continue;
+        
+        const timestamp = new Date().getTime();
+        const fileName = `pasted-image-${timestamp}.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+        
+        addAttachment(currentNote.id, file).then((attachment) => {
+          const markdownImg = `![${attachment.name}](@attachment/${attachment.id})`;
+          
+          if (textareaRef.current) {
+            const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
+            if (textarea) {
+              const cursorPos = textarea.selectionStart;
+              const textBefore = editedContent.substring(0, cursorPos);
+              const textAfter = editedContent.substring(cursorPos);
+              const newContent = textBefore + markdownImg + textAfter;
+              
+              setEditedContent(newContent);
+              setUnsavedChanges(true);
+              
+              setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(
+                  cursorPos + markdownImg.length,
+                  cursorPos + markdownImg.length
+                );
+              }, 0);
+            }
+          }
+        });
+        
+        hasHandledImage = true;
+        break;
+      }
+    }
+    
+    return !hasHandledImage;
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentNote || !e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    addAttachment(currentNote.id, file).then((attachment) => {
+      let markdownRef;
+      
+      if (file.type.startsWith('image/')) {
+        markdownRef = `![${attachment.name}](@attachment/${attachment.id})`;
+      } else {
+        markdownRef = `[${attachment.name}](@attachment/${attachment.id})`;
+      }
+      
+      const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        const cursorPos = textarea.selectionStart;
+        const textBefore = editedContent.substring(0, cursorPos);
+        const textAfter = editedContent.substring(cursorPos);
+        const newContent = textBefore + markdownRef + textAfter;
+        
+        setEditedContent(newContent);
+        setUnsavedChanges(true);
+        
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(
+            cursorPos + markdownRef.length,
+            cursorPos + markdownRef.length
+          );
+        }, 0);
+      }
+    });
+    
+    e.target.value = '';
+  };
+
+  const openAttachment = (attachment: Attachment) => {
+    window.open(attachment.url, '_blank');
+  };
+  
+  const insertAttachmentLink = (attachment: Attachment) => {
+    if (!currentNote || !isEditing) return;
+    
+    let markdownRef;
+    if (attachment.type.startsWith('image/')) {
+      markdownRef = `![${attachment.name}](@attachment/${attachment.id})`;
+    } else {
+      markdownRef = `[${attachment.name}](@attachment/${attachment.id})`;
+    }
+    
+    const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      const cursorPos = textarea.selectionStart;
+      const textBefore = editedContent.substring(0, cursorPos);
+      const textAfter = editedContent.substring(cursorPos);
+      const newContent = textBefore + markdownRef + textAfter;
+      
+      setEditedContent(newContent);
+      setUnsavedChanges(true);
+      setAttachmentsDialogOpen(false);
+      
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(
+          cursorPos + markdownRef.length,
+          cursorPos + markdownRef.length
+        );
+      }, 0);
+    }
   };
 
   if (!currentNote) {
@@ -201,6 +312,44 @@ const NoteEditor: React.FC = () => {
               <TooltipContent>Search in note</TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {isEditing && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                    }}
+                    className="h-8 w-8"
+                  >
+                    <Paperclip size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add Attachment</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {isEditing && currentNote.attachments && currentNote.attachments.length > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAttachmentsDialogOpen(true)}
+                    className="h-8 w-8"
+                  >
+                    <Image size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Browse Attachments</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
 
           <TooltipProvider>
             <Tooltip>
@@ -319,6 +468,14 @@ const NoteEditor: React.FC = () => {
           </TooltipProvider>
         </div>
       </div>
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        onChange={handleFileUpload}
+        accept="image/*,.pdf,.doc,.docx,.txt"
+      />
 
       {showSearch && (
         <div className="px-4 py-2 border-b border-border flex items-center gap-2">
@@ -479,29 +636,7 @@ const NoteEditor: React.FC = () => {
           </TabsList>
           <TabsContent value="edit" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
             <ScrollArea className="h-full">
-              <CodeEditor
-                ref={textareaRef}
-                value={editedContent}
-                onChange={(value) => {
-                  setEditedContent(value);
-                  setUnsavedChanges(true);
-                }}
-                className="w-full h-full min-h-[calc(100vh-280px)]"
-                placeholder="Write your note in Markdown..."
-                disabled={!isEditing}
-              />
-            </ScrollArea>
-          </TabsContent>
-          <TabsContent value="preview" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
-            <ScrollArea className="h-full">
-              <div className="p-4">
-                <MarkdownPreview content={editedContent} />
-              </div>
-            </ScrollArea>
-          </TabsContent>
-          <TabsContent value="split" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
-            <div className="grid grid-cols-2 h-full divide-x">
-              <ScrollArea className="h-full">
+              <div onPaste={handlePaste} className="w-full h-full">
                 <CodeEditor
                   ref={textareaRef}
                   value={editedContent}
@@ -510,13 +645,45 @@ const NoteEditor: React.FC = () => {
                     setUnsavedChanges(true);
                   }}
                   className="w-full h-full min-h-[calc(100vh-280px)]"
-                  placeholder="Write your note in Markdown..."
+                  placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                   disabled={!isEditing}
                 />
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="preview" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
+            <ScrollArea className="h-full">
+              <div className="p-4">
+                <MarkdownPreview 
+                  content={editedContent} 
+                  attachments={currentNote.attachments}
+                />
+              </div>
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="split" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
+            <div className="grid grid-cols-2 h-full divide-x">
+              <ScrollArea className="h-full">
+                <div onPaste={handlePaste} className="w-full h-full">
+                  <CodeEditor
+                    ref={textareaRef}
+                    value={editedContent}
+                    onChange={(value) => {
+                      setEditedContent(value);
+                      setUnsavedChanges(true);
+                    }}
+                    className="w-full h-full min-h-[calc(100vh-280px)]"
+                    placeholder="Write your note in Markdown... (Paste images directly into the editor)"
+                    disabled={!isEditing}
+                  />
+                </div>
               </ScrollArea>
               <ScrollArea className="h-full">
                 <div className="p-4">
-                  <MarkdownPreview content={editedContent} />
+                  <MarkdownPreview 
+                    content={editedContent} 
+                    attachments={currentNote.attachments}
+                  />
                 </div>
               </ScrollArea>
             </div>
@@ -542,6 +709,88 @@ const NoteEditor: React.FC = () => {
             </Button>
             <Button type="button" variant="destructive" onClick={handleDeleteNote}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={attachmentsDialogOpen} onOpenChange={setAttachmentsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Attachments</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 max-h-[300px] overflow-y-auto">
+            {currentNote.attachments && currentNote.attachments.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {currentNote.attachments.map((attachment) => (
+                  <div 
+                    key={attachment.id} 
+                    className="border rounded-md p-2 flex flex-col"
+                  >
+                    <div className="flex-1 mb-2">
+                      {attachment.type.startsWith('image/') ? (
+                        <div className="relative aspect-square overflow-hidden rounded-md mb-1">
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-square bg-secondary/40 rounded-md flex items-center justify-center mb-1">
+                          <Paperclip className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <p className="text-xs truncate font-medium">{attachment.name}</p>
+                    </div>
+                    <div className="flex justify-between mt-auto">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mr-1"
+                        onClick={() => insertAttachmentLink(attachment)}
+                      >
+                        Insert
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => openAttachment(attachment)}
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive shrink-0"
+                        onClick={() => deleteAttachment(currentNote.id, attachment.id)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground">
+                No attachments yet. Upload an attachment or paste an image.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={16} className="mr-2" />
+              Add Attachment
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={() => setAttachmentsDialogOpen(false)}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

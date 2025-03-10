@@ -17,6 +17,16 @@ export interface Note {
   createdAt: Date;
   updatedAt: Date;
   favorite: boolean;
+  attachments?: Attachment[];
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  noteId: string;
+  createdAt: Date;
 }
 
 export interface Tag {

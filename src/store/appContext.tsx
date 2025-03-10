@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Folder, Note, Tag, ViewMode } from '@/types';
+import { Folder, Note, Tag, ViewMode, Attachment } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 
 interface AppContextType {
@@ -31,6 +31,8 @@ interface AppContextType {
   setSearchQuery: (query: string) => void;
   toggleFavorite: (noteId: string) => void;
   filteredNotes: Note[];
+  addAttachment: (noteId: string, file: File) => Promise<Attachment>;
+  deleteAttachment: (noteId: string, attachmentId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -608,6 +610,114 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addAttachment = async (noteId: string, file: File): Promise<Attachment> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        
+        const newAttachment: Attachment = {
+          id: uuidv4(),
+          name: file.name,
+          type: file.type,
+          url: dataUrl,
+          noteId: noteId,
+          createdAt: new Date(),
+        };
+        
+        setNotes((prevNotes) => {
+          return prevNotes.map((note) => {
+            if (note.id === noteId) {
+              const updatedNote = {
+                ...note,
+                attachments: [...(note.attachments || []), newAttachment],
+                updatedAt: new Date(),
+              };
+              if (currentNote?.id === noteId) {
+                setCurrentNoteState(updatedNote);
+              }
+              return updatedNote;
+            }
+            return note;
+          });
+        });
+        
+        setFolders((prevFolders) => {
+          return prevFolders.map((folder) => {
+            const updatedNotes = folder.notes.map((note) => {
+              if (note.id === noteId) {
+                return {
+                  ...note,
+                  attachments: [...(note.attachments || []), newAttachment],
+                  updatedAt: new Date(),
+                };
+              }
+              return note;
+            });
+            
+            return {
+              ...folder,
+              notes: updatedNotes,
+            };
+          });
+        });
+        
+        toast({
+          title: 'Attachment Added',
+          description: `${file.name} has been added to the note.`,
+        });
+        
+        resolve(newAttachment);
+      };
+      
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const deleteAttachment = (noteId: string, attachmentId: string) => {
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.id === noteId && note.attachments) {
+          const updatedNote = {
+            ...note,
+            attachments: note.attachments.filter((att) => att.id !== attachmentId),
+            updatedAt: new Date(),
+          };
+          if (currentNote?.id === noteId) {
+            setCurrentNoteState(updatedNote);
+          }
+          return updatedNote;
+        }
+        return note;
+      });
+    });
+    
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId && note.attachments) {
+            return {
+              ...note,
+              attachments: note.attachments.filter((att) => att.id !== attachmentId),
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+        
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+    
+    toast({
+      title: 'Attachment Deleted',
+      description: `The attachment has been removed from the note.`,
+    });
+  };
+
   const filteredNotes = notes.filter((note) => {
     const matchesSearch = searchQuery
       ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -652,6 +762,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSearchQuery,
     toggleFavorite,
     filteredNotes,
+    addAttachment,
+    deleteAttachment,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
