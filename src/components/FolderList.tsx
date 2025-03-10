@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star, Edit, MoreVertical, Trash, Check, X } from 'lucide-react';
+import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star, Edit, MoreVertical, Trash, Check, X, Move } from 'lucide-react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -8,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const FolderList: React.FC = () => {
   const {
@@ -22,11 +24,15 @@ const FolderList: React.FC = () => {
     deleteFolder,
     updateNote,
     deleteNote,
+    moveNote,
   } = useAppContext();
 
   const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
   const [newNoteDialogOpen, setNewNoteDialogOpen] = useState(false);
+  const [moveNoteDialogOpen, setMoveNoteDialogOpen] = useState(false);
+  const [movingNoteId, setMovingNoteId] = useState<string | null>(null);
+  const [targetFolderId, setTargetFolderId] = useState<string>('');
   const [newFolderName, setNewFolderName] = useState('');
   const [newNoteName, setNewNoteName] = useState('');
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
@@ -118,6 +124,21 @@ const FolderList: React.FC = () => {
   const handleDeleteNote = (noteId: string) => {
     if (window.confirm("Are you sure you want to delete this note?")) {
       deleteNote(noteId);
+    }
+  };
+
+  const openMoveNoteDialog = (noteId: string) => {
+    setMovingNoteId(noteId);
+    setTargetFolderId('');
+    setMoveNoteDialogOpen(true);
+  };
+
+  const handleMoveNote = () => {
+    if (movingNoteId && targetFolderId && targetFolderId !== '') {
+      moveNote(movingNoteId, targetFolderId);
+      setMoveNoteDialogOpen(false);
+      setMovingNoteId(null);
+      setTargetFolderId('');
     }
   };
 
@@ -315,6 +336,10 @@ const FolderList: React.FC = () => {
                                     <Edit size={14} className="mr-2" />
                                     Rename
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => openMoveNoteDialog(note.id)}>
+                                    <Move size={14} className="mr-2" />
+                                    Move to folder
+                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
                                     className="text-red-600 focus:text-red-600" 
@@ -419,6 +444,50 @@ const FolderList: React.FC = () => {
             </Button>
             <Button type="button" onClick={handleCreateNote}>
               Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Note Dialog */}
+      <Dialog open={moveNoteDialogOpen} onOpenChange={setMoveNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Move Note to Another Folder</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="folder-select" className="text-sm font-medium">
+                Select Destination Folder
+              </label>
+              <Select value={targetFolderId} onValueChange={setTargetFolderId}>
+                <SelectTrigger id="folder-select">
+                  <SelectValue placeholder="Select a folder" />
+                </SelectTrigger>
+                <SelectContent>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setMoveNoteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleMoveNote}
+              disabled={!targetFolderId}
+            >
+              Move
             </Button>
           </DialogFooter>
         </DialogContent>

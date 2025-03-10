@@ -19,6 +19,7 @@ interface AppContextType {
   createNote: (folderId: string, title: string, content?: string) => void;
   updateNote: (note: Note) => void;
   deleteNote: (noteId: string) => void;
+  moveNote: (noteId: string, targetFolderId: string) => void;
   setCurrentFolder: (folderId: string | null) => void;
   setCurrentNote: (noteId: string | null) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -308,6 +309,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast({
       title: 'Note Deleted',
       description: `${noteToDelete.title} has been deleted.`,
+    });
+  };
+
+  const moveNote = (noteId: string, targetFolderId: string) => {
+    const noteToMove = notes.find((note) => note.id === noteId);
+    if (!noteToMove) return;
+
+    const sourceFolderId = noteToMove.folderId;
+    const sourceFolder = folders.find((folder) => folder.id === sourceFolderId);
+    const targetFolder = folders.find((folder) => folder.id === targetFolderId);
+    
+    if (!sourceFolder || !targetFolder || sourceFolderId === targetFolderId) return;
+
+    const updatedNote = {
+      ...noteToMove,
+      folderId: targetFolderId,
+      updatedAt: new Date()
+    };
+
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.id === noteId) {
+          return updatedNote;
+        }
+        return note;
+      });
+    });
+
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        if (folder.id === sourceFolderId) {
+          return {
+            ...folder,
+            notes: folder.notes.filter((note) => note.id !== noteId),
+            updatedAt: new Date(),
+          };
+        }
+        if (folder.id === targetFolderId) {
+          return {
+            ...folder,
+            notes: [...folder.notes, updatedNote],
+            updatedAt: new Date(),
+          };
+        }
+        return folder;
+      });
+    });
+
+    if (currentNote?.id === noteId) {
+      setCurrentNoteState(updatedNote);
+      setCurrentFolderState(targetFolder);
+    }
+
+    toast({
+      title: "Note Moved",
+      description: `"${noteToMove.title}" has been moved to "${targetFolder.name}" folder.`,
     });
   };
 
@@ -750,6 +807,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     createNote,
     updateNote,
     deleteNote,
+    moveNote,
     setCurrentFolder,
     setCurrentNote,
     setViewMode,
