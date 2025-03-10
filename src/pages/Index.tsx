@@ -16,7 +16,6 @@ const SearchCommandPalette = () => {
     tags,
     setCurrentFolder,
     setCurrentNote,
-    currentTags,
     setSearchQuery,
   } = useAppContext();
   
