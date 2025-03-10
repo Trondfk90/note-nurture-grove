@@ -1,15 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from '@/store/appContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import FolderList from '@/components/FolderList';
-import TagList from '@/components/TagList';
 import NoteEditor from '@/components/NoteEditor';
 import Toolbar from '@/components/Toolbar';
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { File, Folder, Hash, KeyboardIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { File, Folder, Hash, KeyboardIcon } from 'lucide-react';
 
 // Search component that will be used inside the provider
 const SearchCommandPalette = () => {
@@ -26,7 +22,6 @@ const SearchCommandPalette = () => {
   const [open, setOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
 
-  // Register keyboard shortcut to open search
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
@@ -39,7 +34,6 @@ const SearchCommandPalette = () => {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // Filter items based on search input
   const filteredNotes = notes.filter((note) => 
     note.title.toLowerCase().includes(searchInput.toLowerCase()) || 
     note.content.toLowerCase().includes(searchInput.toLowerCase())
@@ -157,8 +151,6 @@ const SearchCommandPalette = () => {
 };
 
 const Index: React.FC = () => {
-  const [isTagsOpen, setIsTagsOpen] = useState(false);
-
   return (
     <AppProvider>
       <div className="h-screen w-screen flex flex-col overflow-hidden">
@@ -168,47 +160,15 @@ const Index: React.FC = () => {
           className="flex-1 bg-background"
         >
           <ResizablePanel
-            defaultSize={15}
-            minSize={10}
-            maxSize={25}
+            defaultSize={20}
+            minSize={15}
+            maxSize={30}
             className="bg-sidebar"
           >
             <FolderList />
           </ResizablePanel>
           <ResizableHandle withHandle />
-          {isTagsOpen ? (
-            <>
-              <ResizablePanel
-                defaultSize={20}
-                minSize={15}
-                maxSize={30}
-                className="relative"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-4 right-2 z-10"
-                  onClick={() => setIsTagsOpen(false)}
-                >
-                  <ChevronLeft size={16} />
-                </Button>
-                <TagList />
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-            </>
-          ) : (
-            <div className="w-8 flex items-center justify-center border-r border-l border-border">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setIsTagsOpen(true)}
-              >
-                <ChevronRight size={16} />
-              </Button>
-            </div>
-          )}
-          <ResizablePanel defaultSize={isTagsOpen ? 65 : 85}>
+          <ResizablePanel defaultSize={80}>
             <NoteEditor />
           </ResizablePanel>
         </ResizablePanelGroup>
