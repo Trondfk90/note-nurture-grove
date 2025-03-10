@@ -121,10 +121,10 @@ Click the "+" button to create a new note and start writing!
 };
 
 const INITIAL_TAGS: Tag[] = [
-  { id: uuidv4(), name: 'tutorial', color: '#4CAF50' },
-  { id: uuidv4(), name: 'markdown', color: '#2196F3' },
-  { id: uuidv4(), name: 'important', color: '#F44336' },
-  { id: uuidv4(), name: 'ideas', color: '#9C27B0' },
+  { id: uuidv4(), name: 'tutorial', displayName: 'Tutorial', color: '#4CAF50' },
+  { id: uuidv4(), name: 'markdown', displayName: 'Markdown', color: '#2196F3' },
+  { id: uuidv4(), name: 'important', displayName: 'Important', color: '#F44336' },
+  { id: uuidv4(), name: 'ideas', displayName: 'Ideas', color: '#9C27B0' },
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -324,16 +324,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addTag = (name: string, color: string) => {
+    const displayName = name.trim();
+    const newTagName = displayName.toLowerCase().replace(/\s+/g, '-');
+    
     const newTag: Tag = {
       id: uuidv4(),
-      name: name.toLowerCase().replace(/\s+/g, '-'),
+      name: newTagName,
+      displayName: displayName,
       color,
     };
 
     setTags([...tags, newTag]);
     toast({
       title: 'Tag Created',
-      description: `Tag "${newTag.name}" has been created.`,
+      description: `Tag "${displayName}" has been created.`,
     });
   };
 
@@ -342,7 +346,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!tagToUpdate) return;
 
     const oldTagName = tagToUpdate.name;
-    const newTagName = name.toLowerCase().replace(/\s+/g, '-');
+    const displayName = name.trim();
+    const newTagName = displayName.toLowerCase().replace(/\s+/g, '-');
 
     setTags((prevTags) => {
       return prevTags.map((tag) => {
@@ -350,6 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...tag,
             name: newTagName,
+            displayName: displayName,
             color,
           };
         }
@@ -400,7 +406,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     toast({
       title: 'Tag Updated',
-      description: `Tag "${oldTagName}" has been updated to "${newTagName}".`,
+      description: `Tag "${oldTagName}" has been updated to "${displayName}".`,
     });
   };
 
@@ -450,12 +456,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addTagToNote = (noteId: string, tagName: string) => {
-    const formattedTagName = tagName.toLowerCase().replace(/\s+/g, '-');
+    const displayName = tagName.trim();
+    const formattedTagName = displayName.toLowerCase().replace(/\s+/g, '-');
 
     if (!tags.some((tag) => tag.name === formattedTagName)) {
       const colors = ['#4CAF50', '#2196F3', '#F44336', '#9C27B0', '#FF9800', '#795548', '#607D8B'];
       const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      addTag(formattedTagName, randomColor);
+      addTag(displayName, randomColor);
     }
 
     setNotes((prevNotes) => {

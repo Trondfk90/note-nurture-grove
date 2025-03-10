@@ -11,6 +11,10 @@ interface CodeEditorProps {
   disabled?: boolean;
 }
 
+interface CodeEditorRef extends HTMLDivElement {
+  scrollToSearchResult?: (position: number) => void;
+}
+
 const CodeEditor: React.FC<CodeEditorProps> = ({
   value,
   onChange,
@@ -19,6 +23,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   disabled = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<CodeEditorRef>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [cursorLine, setCursorLine] = useState(1);
@@ -78,7 +83,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     
     // Set selection at the position
     textareaRef.current.focus();
-    textareaRef.current.setSelectionRange(position, position + 1);
+    textareaRef.current.setSelectionRange(position, position + searchQuery.length);
     
     // Scroll to make the line visible (centered if possible)
     const lineHeight = 1.675 * 16; // From the CSS
@@ -91,9 +96,8 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   // Expose scrollToSearchResult method to parent components
   useEffect(() => {
-    if (textareaRef.current) {
-      // @ts-ignore - Adding a custom property to the element
-      textareaRef.current.scrollToSearchResult = scrollToSearchResult;
+    if (editorRef.current) {
+      editorRef.current.scrollToSearchResult = scrollToSearchResult;
     }
   }, [value]);
 
@@ -101,7 +105,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
   return (
-    <div className={cn("editor-container relative font-mono flex", className)}>
+    <div 
+      ref={editorRef}
+      className={cn("editor-container relative font-mono flex", className)}
+    >
       <div 
         ref={lineNumbersRef}
         className="line-numbers bg-muted/70 text-muted-foreground p-2 text-right pr-3 overflow-hidden select-none"

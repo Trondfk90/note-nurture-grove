@@ -23,6 +23,7 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  displayName: string; // Added displayName for case-sensitive display
 }
 
 export type ViewMode = 'edit' | 'preview' | 'split';

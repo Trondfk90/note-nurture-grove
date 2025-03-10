@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from '@/store/appContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -44,7 +45,8 @@ const SearchCommandPalette = () => {
   );
   
   const filteredTags = tags.filter((tag) => 
-    tag.name.toLowerCase().includes(searchInput.toLowerCase())
+    tag.name.toLowerCase().includes(searchInput.toLowerCase()) ||
+    (tag.displayName && tag.displayName.toLowerCase().includes(searchInput.toLowerCase()))
   );
 
   const handleSelectNote = (noteId: string) => {
@@ -102,7 +104,7 @@ const SearchCommandPalette = () => {
                             color: tag ? tag.color : undefined,
                           }}
                         >
-                          #{tagName}
+                          #{tag?.displayName || tagName}
                         </span>
                       );
                     })}
@@ -139,7 +141,7 @@ const SearchCommandPalette = () => {
                   className="font-medium"
                   style={{ color: tag.color }}
                 >
-                  #{tag.name}
+                  #{tag.displayName || tag.name}
                 </span>
               </CommandItem>
             ))}

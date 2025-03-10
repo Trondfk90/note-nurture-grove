@@ -3,7 +3,7 @@ import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X, Search, Plus } from 'lucide-react';
+import { Eye, Edit2, Star, StarOff, Save, Hash, Trash2, X, Search, Plus, Tags } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import CodeEditor from './CodeEditor';
+import ManageTags from './ManageTags';
 
 const NoteEditor: React.FC = () => {
   const {
@@ -40,8 +41,9 @@ const NoteEditor: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{index: number, line: number}[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [manageTagsOpen, setManageTagsOpen] = useState(false);
   
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (currentNote) {
@@ -124,14 +126,18 @@ const NoteEditor: React.FC = () => {
   const navigateToSearchResult = (result: {index: number, line: number}) => {
     if (!textareaRef.current) return;
     
-    const textarea = textareaRef.current.querySelector('textarea');
-    if (!textarea) return;
-    
-    if (textarea.scrollToSearchResult) {
-      textarea.scrollToSearchResult(result.index);
+    const scrollToFn = textareaRef.current.scrollToSearchResult;
+    if (scrollToFn && typeof scrollToFn === 'function') {
+      scrollToFn(result.index);
     } else {
-      textarea.focus();
-      textarea.setSelectionRange(result.index, result.index + searchQuery.length);
+      const editorElement = textareaRef.current.querySelector('textarea');
+      if (editorElement) {
+        editorElement.focus();
+        editorElement.setSelectionRange(result.index, result.index + searchQuery.length);
+        
+        const lineHeight = 1.675 * 16;
+        editorElement.scrollTop = (result.line - 5) * lineHeight;
+      }
     }
   };
   
@@ -215,6 +221,22 @@ const NoteEditor: React.FC = () => {
               <TooltipContent>
                 {currentNote.favorite ? 'Remove from favorites' : 'Add to favorites'}
               </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setManageTagsOpen(true)}
+                  className="h-8 w-8"
+                >
+                  <Tags size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Manage Tags</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -357,7 +379,7 @@ const NoteEditor: React.FC = () => {
               }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag?.color }} />
-              {tagName}
+              {tag?.displayName || tagName}
               {isEditing && (
                 <Button
                   variant="ghost"
@@ -428,7 +450,7 @@ const NoteEditor: React.FC = () => {
                             }}
                           >
                             <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
-                            {tag.name}
+                            {tag.displayName}
                           </Badge>
                         ))}
                     </div>
@@ -458,6 +480,7 @@ const NoteEditor: React.FC = () => {
           <TabsContent value="edit" className="flex-1 p-0 m-0 h-[calc(100%-40px)]">
             <ScrollArea className="h-full">
               <CodeEditor
+                ref={textareaRef}
                 value={editedContent}
                 onChange={(value) => {
                   setEditedContent(value);
@@ -480,6 +503,7 @@ const NoteEditor: React.FC = () => {
             <div className="grid grid-cols-2 h-full divide-x">
               <ScrollArea className="h-full">
                 <CodeEditor
+                  ref={textareaRef}
                   value={editedContent}
                   onChange={(value) => {
                     setEditedContent(value);
@@ -500,7 +524,6 @@ const NoteEditor: React.FC = () => {
         </Tabs>
       </div>
 
-      {/* Delete Note Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -523,6 +546,8 @@ const NoteEditor: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ManageTags open={manageTagsOpen} onOpenChange={setManageTagsOpen} />
     </div>
   );
 };
