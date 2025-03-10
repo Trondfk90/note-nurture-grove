@@ -1,13 +1,44 @@
-// Update this page (the content is just a fallback if you fail to update the page)
 
-const Index = () => {
+import React from 'react';
+import { AppProvider } from '@/store/appContext';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import FolderList from '@/components/FolderList';
+import TagList from '@/components/TagList';
+import NoteEditor from '@/components/NoteEditor';
+import Toolbar from '@/components/Toolbar';
+
+const Index: React.FC = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <AppProvider>
+      <div className="h-screen w-screen flex flex-col overflow-hidden">
+        <Toolbar />
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="flex-1 bg-background"
+        >
+          <ResizablePanel
+            defaultSize={15}
+            minSize={10}
+            maxSize={25}
+            className="bg-sidebar"
+          >
+            <FolderList />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel
+            defaultSize={20}
+            minSize={15}
+            maxSize={30}
+          >
+            <TagList />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={65}>
+            <NoteEditor />
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
-    </div>
+    </AppProvider>
   );
 };
 
