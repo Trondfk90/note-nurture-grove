@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -146,6 +147,13 @@ const NoteEditor: React.FC = () => {
     setCurrentSearchIndex(prevIndex);
     navigateToSearchResult(searchResults[prevIndex]);
   };
+
+  // Update search results when query changes
+  useEffect(() => {
+    if (searchQuery) {
+      handleSearch();
+    }
+  }, [searchQuery]);
 
   const handlePaste = (e: React.ClipboardEvent) => {
     if (!currentNote || !isEditing) return;
@@ -485,6 +493,7 @@ const NoteEditor: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1"
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            autoFocus
           />
           <Button variant="outline" size="sm" onClick={handleSearch}>
             Search
@@ -514,7 +523,11 @@ const NoteEditor: React.FC = () => {
             variant="ghost" 
             size="icon" 
             className="h-8 w-8" 
-            onClick={() => setShowSearch(false)}
+            onClick={() => {
+              setShowSearch(false);
+              setSearchQuery('');
+              setSearchResults([]);
+            }}
           >
             <X size={16} />
           </Button>
@@ -647,6 +660,8 @@ const NoteEditor: React.FC = () => {
                   className="w-full h-full min-h-[calc(100vh-280px)]"
                   placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                   disabled={!isEditing}
+                  highlightSearchMatches={searchResults.length > 0}
+                  searchQuery={searchQuery}
                 />
               </div>
             </ScrollArea>
@@ -675,6 +690,8 @@ const NoteEditor: React.FC = () => {
                     className="w-full h-full min-h-[calc(100vh-280px)]"
                     placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                     disabled={!isEditing}
+                    highlightSearchMatches={searchResults.length > 0}
+                    searchQuery={searchQuery}
                   />
                 </div>
               </ScrollArea>

@@ -9,6 +9,8 @@ interface CodeEditorProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  highlightSearchMatches?: boolean;
+  searchQuery?: string;
 }
 
 export interface CodeEditorRef {
@@ -21,6 +23,8 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   placeholder,
   className,
   disabled = false,
+  highlightSearchMatches = false,
+  searchQuery = '',
 }, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -28,6 +32,33 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorColumn, setCursorColumn] = useState(1);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const [searchMatches, setSearchMatches] = useState<{start: number, end: number}[]>([]);
+  
+  // Function to find all search matches
+  useEffect(() => {
+    if (searchQuery && searchQuery.trim() !== '' && highlightSearchMatches) {
+      const matches: {start: number, end: number}[] = [];
+      const query = searchQuery.toLowerCase();
+      const content = value.toLowerCase();
+      let index = 0;
+      
+      while (index < content.length) {
+        const foundIndex = content.indexOf(query, index);
+        if (foundIndex === -1) break;
+        
+        matches.push({
+          start: foundIndex,
+          end: foundIndex + query.length
+        });
+        
+        index = foundIndex + query.length;
+      }
+      
+      setSearchMatches(matches);
+    } else {
+      setSearchMatches([]);
+    }
+  }, [searchQuery, value, highlightSearchMatches]);
 
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
@@ -122,6 +153,70 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   // Create line numbers array
   const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
+  // Function to create a textarea with highlighted search matches
+  const renderTextAreaWithHighlights = () => {
+    if (!highlightSearchMatches || searchMatches.length === 0 || !searchQuery) {
+      return (
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onClick={handleSelect}
+          onKeyUp={handleSelect}
+          onSelect={handleSelect}
+          placeholder={placeholder}
+          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
+          style={{ minHeight: '100%' }}
+          disabled={disabled}
+        />
+      );
+    }
+
+    return (
+      <div className="relative flex-1 h-full">
+        <Textarea
+          ref={textareaRef}
+          value={value}
+          onChange={handleChange}
+          onClick={handleSelect}
+          onKeyUp={handleSelect}
+          onSelect={handleSelect}
+          placeholder={placeholder}
+          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem] bg-transparent"
+          style={{ minHeight: '100%', zIndex: 2, position: 'relative', caretColor: 'black' }}
+          disabled={disabled}
+        />
+        <div 
+          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent"
+          style={{ zIndex: 1 }}
+        >
+          {searchMatches.map((match, idx) => {
+            const beforeMatch = value.substring(0, match.start);
+            const matchText = value.substring(match.start, match.end);
+            
+            // Calculate position for the highlight
+            const matchLines = beforeMatch.split('\n');
+            const lastLine = matchLines[matchLines.length - 1];
+            
+            return (
+              <span 
+                key={idx}
+                className="absolute bg-yellow-200 rounded-sm" 
+                style={{
+                  top: `calc(1.675rem * ${matchLines.length - 1})`,
+                  left: `calc(${lastLine.length} * 0.6125rem + 0.5rem)`,
+                  height: '1.675rem',
+                  width: `calc(${matchText.length} * 0.6125rem)`,
+                  opacity: 0.5
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div 
       ref={editorContainerRef}
@@ -154,18 +249,7 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
         ))}
       </div>
       <div className="flex-1" style={{ marginLeft: '3rem' }}>
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onClick={handleSelect}
-          onKeyUp={handleSelect}
-          onSelect={handleSelect}
-          placeholder={placeholder}
-          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
-          style={{ minHeight: '100%' }}
-          disabled={disabled}
-        />
+        {renderTextAreaWithHighlights()}
       </div>
       <div className="absolute bottom-2 right-2 bg-muted px-2 py-0.5 text-xs rounded text-muted-foreground">
         Line {cursorLine}, Column {cursorColumn}

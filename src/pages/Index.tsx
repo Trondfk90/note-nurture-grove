@@ -71,12 +71,16 @@ const SearchCommandPalette = () => {
     setSearchInput('');
   };
 
+  // Check if there's content in the search results
+  const hasSearchResults = filteredNotes.length > 0 || filteredFolders.length > 0 || filteredTags.length > 0;
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput 
         placeholder="Search notes, folders, tags..."
         value={searchInput}
         onValueChange={setSearchInput}
+        autoFocus
       />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
