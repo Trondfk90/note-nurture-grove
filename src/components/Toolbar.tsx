@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileText, Folder, KeyboardIcon, Desktop } from 'lucide-react';
+import { Search, Plus, FileText, Folder, KeyboardIcon, Monitor } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,8 +34,6 @@ const Toolbar: React.FC = () => {
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
-      // In a real app, you'd pick a path via a file dialog
-      // For this demo, we'll just use a dummy path
       createFolder(newFolderName, `/MyNotable/${newFolderName}`);
       setNewFolderName('');
       setNewFolderDialogOpen(false);
@@ -66,7 +63,7 @@ const Toolbar: React.FC = () => {
     <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between">
       <div className="flex items-center">
         <div className="flex items-center mr-6">
-          <Desktop className="h-5 w-5 mr-2 text-primary" />
+          <Monitor className="h-5 w-5 mr-2 text-primary" />
           <h1 className="text-xl font-semibold">TFK Notes</h1>
         </div>
         <div className="relative flex-1 max-w-sm">
@@ -159,7 +156,6 @@ const Toolbar: React.FC = () => {
         </Button>
       </div>
 
-      {/* New Folder Dialog */}
       <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -190,7 +186,6 @@ const Toolbar: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* New Note Dialog */}
       <Dialog open={newNoteDialogOpen} onOpenChange={setNewNoteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

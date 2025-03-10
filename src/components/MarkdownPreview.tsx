@@ -45,12 +45,13 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             
-            if (inline) {
+            // Check if it's an inline code block
+            if (!className) {
               return (
-                <code className={className} {...props}>
+                <code {...props}>
                   {children}
                 </code>
               );
@@ -67,7 +68,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
 
             return (
               <SyntaxHighlighter
-                style={tomorrow}
+                style={tomorrow as any}
                 language={language}
                 PreTag="div"
                 {...props}
