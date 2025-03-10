@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { CodeEditorRef } from './CodeEditor';
@@ -74,7 +73,8 @@ const NoteEditor: React.FC = () => {
 
   const handleCreateNewNote = () => {
     if (currentFolder && newNoteTitle.trim()) {
-      createNote(currentFolder.id, newNoteTitle);
+      const defaultContent = `# ${newNoteTitle}\n\nStart writing your note here...`;
+      createNote(currentFolder.id, newNoteTitle, defaultContent);
       setIsCreatingNewNote(false);
       setNewNoteTitle('');
     }
@@ -138,7 +138,6 @@ const NoteEditor: React.FC = () => {
     navigateToSearchResult(searchResults[prevIndex]);
   };
 
-  // Update search results when query changes
   useEffect(() => {
     if (searchQuery) {
       handleSearch();
@@ -275,6 +274,11 @@ const NoteEditor: React.FC = () => {
               placeholder="Note title"
               className="w-full p-2 rounded border mb-4"
               autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newNoteTitle.trim()) {
+                  handleCreateNewNote();
+                }
+              }}
             />
             <div className="flex justify-end gap-2">
               <button
