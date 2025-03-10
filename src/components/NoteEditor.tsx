@@ -1,16 +1,19 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import CodeEditor, { CodeEditorRef } from './CodeEditor';
-import MarkdownPreview from './MarkdownPreview';
+import { Eye, Edit2, Star, StarOff, Save, Trash2, X, Search, Plus, Tags, Paperclip, Image, ExternalLink } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Attachment, Note } from '@/types';
-import NoteHeader from './notes/NoteHeader';
-import SearchBar from './notes/SearchBar';
-import NoteTags from './notes/NoteTags';
-import AttachmentsDialog from './notes/AttachmentsDialog';
-import DeleteNoteDialog from './notes/DeleteNoteDialog';
+import MarkdownPreview from './MarkdownPreview';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import CodeEditor, { CodeEditorRef } from './CodeEditor';
 import ManageTags from './ManageTags';
 
 const NoteEditor: React.FC = () => {
@@ -280,27 +283,191 @@ const NoteEditor: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <NoteHeader
-        note={currentNote}
-        editedTitle={editedTitle}
-        setEditedTitle={(title) => {
-          setEditedTitle(title);
-          setUnsavedChanges(true);
-        }}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-        setShowSearch={setShowSearch}
-        showSearch={showSearch}
-        unsavedChanges={unsavedChanges}
-        handleSave={handleSave}
-        handleToggleFavorite={handleToggleFavorite}
-        setManageTagsOpen={setManageTagsOpen}
-        setDeleteDialogOpen={setDeleteDialogOpen}
-        setAttachmentsDialogOpen={setAttachmentsDialogOpen}
-        fileInputRef={fileInputRef}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-      />
+      <div className="border-b border-border p-4 flex items-center">
+        <div className="flex-1">
+          <Input
+            value={editedTitle}
+            onChange={(e) => {
+              setEditedTitle(e.target.value);
+              setUnsavedChanges(true);
+            }}
+            className="text-lg font-medium border-0 p-0 h-auto focus-visible:ring-0"
+            disabled={!isEditing}
+            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="h-8 w-8"
+                >
+                  <Search size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Search in note</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {isEditing && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      fileInputRef.current?.click();
+                    }}
+                    className="h-8 w-8"
+                  >
+                    <Paperclip size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add Attachment</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {isEditing && currentNote.attachments && currentNote.attachments.length > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAttachmentsDialogOpen(true)}
+                    className="h-8 w-8"
+                  >
+                    <Image size={18} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Browse Attachments</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleToggleFavorite}
+                  className="h-8 w-8"
+                >
+                  {currentNote.favorite ? (
+                    <Star size={18} className="text-yellow-400 fill-yellow-400" />
+                  ) : (
+                    <StarOff size={18} />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {currentNote.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setManageTagsOpen(true)}
+                  className="h-8 w-8"
+                >
+                  <Tags size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Manage Tags</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="h-8 w-8"
+                >
+                  <Trash2 size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete note</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          {unsavedChanges && isEditing && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSave}
+                    className="h-8"
+                  >
+                    <Save size={16} className="mr-1" />
+                    Save
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Save changes</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          <div className="border-l h-6 mx-2 border-border" />
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={isEditing ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setViewMode('edit');
+                  }}
+                  className="h-8 w-8"
+                >
+                  <Edit2 size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={!isEditing ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={() => {
+                    if (unsavedChanges) {
+                      handleSave();
+                    }
+                    setIsEditing(false);
+                    setViewMode('preview');
+                  }}
+                  className="h-8 w-8"
+                >
+                  <Eye size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Preview</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
 
       <input 
         type="file" 
@@ -311,31 +478,146 @@ const NoteEditor: React.FC = () => {
       />
 
       {showSearch && (
-        <SearchBar
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          handleSearch={handleSearch}
-          prevSearchResult={prevSearchResult}
-          nextSearchResult={nextSearchResult}
-          setShowSearch={setShowSearch}
-          searchResults={searchResults}
-          currentSearchIndex={currentSearchIndex}
-        />
+        <div className="px-4 py-2 border-b border-border flex items-center gap-2">
+          <Input
+            placeholder="Search in note..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button variant="outline" size="sm" onClick={handleSearch}>
+            Search
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={prevSearchResult}
+            disabled={searchResults.length === 0}
+          >
+            Prev
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={nextSearchResult}
+            disabled={searchResults.length === 0}
+          >
+            Next
+          </Button>
+          {searchResults.length > 0 && (
+            <span className="text-sm text-muted-foreground">
+              {currentSearchIndex + 1} of {searchResults.length}
+            </span>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            onClick={() => setShowSearch(false)}
+          >
+            <X size={16} />
+          </Button>
+        </div>
       )}
 
-      <NoteTags
-        noteTags={currentNote.tags}
-        allTags={tags}
-        isEditing={isEditing}
-        tagPopoverOpen={tagPopoverOpen}
-        setTagPopoverOpen={setTagPopoverOpen}
-        newTagName={newTagName}
-        setNewTagName={setNewTagName}
-        handleAddTag={handleAddTag}
-        addTagToNote={addTagToNote}
-        removeTagFromNote={removeTagFromNote}
-        noteId={currentNote.id}
-      />
+      <div className="px-4 py-2 border-b border-border flex flex-wrap items-center gap-1.5">
+        {currentNote.tags.map((tagName) => {
+          const tag = tags.find((t) => t.name === tagName);
+          return (
+            <Badge
+              key={tagName}
+              variant="secondary"
+              className="flex items-center gap-1 text-xs"
+              style={{
+                backgroundColor: tag ? `${tag.color}20` : undefined,
+                color: tag ? tag.color : undefined,
+                borderColor: tag ? `${tag.color}40` : undefined,
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag?.color }} />
+              {tag?.displayName || tagName}
+              {isEditing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-3 w-3 ml-1 p-0 hover:bg-transparent"
+                  onClick={() => removeTagFromNote(currentNote.id, tagName)}
+                >
+                  <X size={10} />
+                </Button>
+              )}
+            </Badge>
+          );
+        })}
+        
+        {isEditing && (
+          <Popover open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-6 px-2 text-xs flex items-center gap-1 bg-secondary/40"
+              >
+                <Plus size={12} />
+                <span>Add Tag</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-4" align="start">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Add a tag</h4>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="New tag name"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    className="flex-1"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                  />
+                  <Button onClick={handleAddTag} size="sm">
+                    Add
+                  </Button>
+                </div>
+                
+                {tags.length > 0 && (
+                  <div>
+                    <h5 className="text-xs font-medium text-muted-foreground mb-2">
+                      Or select from existing tags:
+                    </h5>
+                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                      {tags
+                        .filter((tag) => !currentNote.tags.includes(tag.name))
+                        .map((tag) => (
+                          <Badge
+                            key={tag.id}
+                            variant="secondary"
+                            className={cn(
+                              "cursor-pointer flex items-center gap-1",
+                              "hover:bg-accent"
+                            )}
+                            style={{
+                              backgroundColor: `${tag.color}20`,
+                              color: tag.color,
+                              borderColor: `${tag.color}40`,
+                            }}
+                            onClick={() => {
+                              addTagToNote(currentNote.id, tag.name);
+                              setTagPopoverOpen(false);
+                            }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tag.color }} />
+                            {tag.displayName}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
 
       <div className="flex-1 overflow-hidden">
         <Tabs
@@ -409,23 +691,110 @@ const NoteEditor: React.FC = () => {
         </Tabs>
       </div>
 
-      <DeleteNoteDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        noteTitle={currentNote.title}
-        onConfirm={handleDeleteNote}
-      />
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Note</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete "{currentNote.title}"? This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDeleteNote}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <AttachmentsDialog
-        open={attachmentsDialogOpen}
-        onOpenChange={setAttachmentsDialogOpen}
-        attachments={currentNote.attachments || []}
-        fileInputRef={fileInputRef}
-        insertAttachmentLink={insertAttachmentLink}
-        openAttachment={openAttachment}
-        deleteAttachment={deleteAttachment}
-        noteId={currentNote.id}
-      />
+      <Dialog open={attachmentsDialogOpen} onOpenChange={setAttachmentsDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Attachments</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 max-h-[300px] overflow-y-auto">
+            {currentNote.attachments && currentNote.attachments.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {currentNote.attachments.map((attachment) => (
+                  <div 
+                    key={attachment.id} 
+                    className="border rounded-md p-2 flex flex-col"
+                  >
+                    <div className="flex-1 mb-2">
+                      {attachment.type.startsWith('image/') ? (
+                        <div className="relative aspect-square overflow-hidden rounded-md mb-1">
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-square bg-secondary/40 rounded-md flex items-center justify-center mb-1">
+                          <Paperclip className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <p className="text-xs truncate font-medium">{attachment.name}</p>
+                    </div>
+                    <div className="flex justify-between mt-auto">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mr-1"
+                        onClick={() => insertAttachmentLink(attachment)}
+                      >
+                        Insert
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => openAttachment(attachment)}
+                      >
+                        <ExternalLink size={14} />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-destructive shrink-0"
+                        onClick={() => deleteAttachment(currentNote.id, attachment.id)}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground">
+                No attachments yet. Upload an attachment or paste an image.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={16} className="mr-2" />
+              Add Attachment
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={() => setAttachmentsDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ManageTags open={manageTagsOpen} onOpenChange={setManageTagsOpen} />
     </div>
