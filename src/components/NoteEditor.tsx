@@ -19,6 +19,8 @@ const NoteEditor: React.FC = () => {
     isEditing,
     addAttachment,
     toggleFavorite,
+    createNote,
+    currentFolder,
   } = useAppContext();
 
   const [editedTitle, setEditedTitle] = useState('');
@@ -33,12 +35,15 @@ const NoteEditor: React.FC = () => {
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
   const textareaRef = useRef<CodeEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCreatingNewNote, setIsCreatingNewNote] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState('');
 
   useEffect(() => {
     if (currentNote) {
       setEditedTitle(currentNote.title);
       setEditedContent(currentNote.content);
       setUnsavedChanges(false);
+      setIsCreatingNewNote(false);
     }
   }, [currentNote]);
 
@@ -64,6 +69,14 @@ const NoteEditor: React.FC = () => {
   const handleToggleFavorite = () => {
     if (currentNote) {
       toggleFavorite(currentNote.id);
+    }
+  };
+
+  const handleCreateNewNote = () => {
+    if (currentFolder && newNoteTitle.trim()) {
+      createNote(currentFolder.id, newNoteTitle);
+      setIsCreatingNewNote(false);
+      setNewNoteTitle('');
     }
   };
 
@@ -249,7 +262,42 @@ const NoteEditor: React.FC = () => {
     }
   };
 
-  if (!currentNote) {
+  if (isCreatingNewNote) {
+    return (
+      <div className="flex flex-col h-full p-4 bg-secondary/30">
+        <div className="flex flex-col items-center justify-center h-full">
+          <h3 className="text-lg font-medium mb-4">Create a New Note</h3>
+          <div className="w-full max-w-md">
+            <input
+              type="text"
+              value={newNoteTitle}
+              onChange={(e) => setNewNoteTitle(e.target.value)}
+              placeholder="Note title"
+              className="w-full p-2 rounded border mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsCreatingNewNote(false)}
+                className="px-4 py-2 rounded border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateNewNote}
+                className="px-4 py-2 rounded bg-primary text-primary-foreground"
+                disabled={!newNoteTitle.trim()}
+              >
+                Create Note
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentNote && !isCreatingNewNote) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-secondary/30">
         <div className="text-center">
@@ -257,6 +305,14 @@ const NoteEditor: React.FC = () => {
           <p className="text-sm text-muted-foreground mt-2">
             Select a note from the sidebar or create a new one.
           </p>
+          {currentFolder && (
+            <button
+              onClick={() => setIsCreatingNewNote(true)}
+              className="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground"
+            >
+              Create New Note
+            </button>
+          )}
         </div>
       </div>
     );
