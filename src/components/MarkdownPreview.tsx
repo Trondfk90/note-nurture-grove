@@ -40,7 +40,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
   }, [content]);
 
   return (
-    <div className="markdown-body prose prose-sm max-w-none">
+    <div className="markdown-body prose prose-sm max-w-none dark:prose-invert">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
@@ -74,20 +74,36 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
           },
           table({ className, children, ...props }) {
             return (
-              <div className="overflow-x-auto">
-                <table className={className} {...props}>
+              <div className="overflow-x-auto my-6 rounded-md border">
+                <table className={`${className || ''} min-w-full border-collapse`} {...props}>
                   {children}
                 </table>
               </div>
             );
           },
+          thead({ children }) {
+            return <thead className="bg-muted/50">{children}</thead>;
+          },
+          tbody({ children }) {
+            return <tbody className="divide-y divide-border">{children}</tbody>;
+          },
+          tr({ children }) {
+            return <tr className="divide-x divide-border">{children}</tr>;
+          },
+          th({ children }) {
+            return <th className="px-4 py-2 text-left font-semibold">{children}</th>;
+          },
+          td({ children }) {
+            return <td className="px-4 py-2">{children}</td>;
+          },
           pre({ children }) {
             return <pre className="bg-muted rounded-md p-4 overflow-x-auto">{children}</pre>;
           },
-          a({ href, children, ...props }) {
+          a({ href, children, title, ...props }) {
             return (
               <a 
                 href={href} 
+                title={title}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
@@ -97,43 +113,56 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
               </a>
             );
           },
-          img({ src, alt, ...props }) {
+          img({ src, alt, title, ...props }) {
             return (
               <img
                 src={src}
                 alt={alt || ''}
-                className="max-w-full h-auto rounded-md"
+                title={title}
+                className="max-w-full h-auto rounded-md my-4"
                 {...props}
               />
             );
           },
           blockquote({ children }) {
             return (
-              <blockquote className="border-l-4 border-primary/20 pl-4 italic">
+              <blockquote className="border-l-4 border-primary/20 pl-4 py-1 my-4 italic">
                 {children}
               </blockquote>
             );
           },
-          h1({ children }) {
-            return <h1 className="text-2xl font-bold my-4">{children}</h1>;
+          h1({ children, id }) {
+            return <h1 id={id} className="text-2xl font-bold mt-6 mb-4 pb-1 border-b">{children}</h1>;
           },
-          h2({ children }) {
-            return <h2 className="text-xl font-bold my-3">{children}</h2>;
+          h2({ children, id }) {
+            return <h2 id={id} className="text-xl font-bold mt-5 mb-3">{children}</h2>;
           },
-          h3({ children }) {
-            return <h3 className="text-lg font-bold my-2">{children}</h3>;
+          h3({ children, id }) {
+            return <h3 id={id} className="text-lg font-bold mt-4 mb-2">{children}</h3>;
+          },
+          h4({ children, id }) {
+            return <h4 id={id} className="text-base font-bold mt-4 mb-2">{children}</h4>;
+          },
+          h5({ children, id }) {
+            return <h5 id={id} className="text-sm font-bold mt-3 mb-1">{children}</h5>;
+          },
+          h6({ children, id }) {
+            return <h6 id={id} className="text-xs font-bold mt-3 mb-1">{children}</h6>;
           },
           ul({ children }) {
-            return <ul className="list-disc pl-6 my-2">{children}</ul>;
+            return <ul className="list-disc pl-6 my-4">{children}</ul>;
           },
-          ol({ children }) {
-            return <ol className="list-decimal pl-6 my-2">{children}</ol>;
+          ol({ children, start }) {
+            return <ol start={start} className="list-decimal pl-6 my-4">{children}</ol>;
+          },
+          li({ children }) {
+            return <li className="my-1">{children}</li>;
           },
           hr() {
-            return <hr className="my-4 border-t border-muted" />;
+            return <hr className="my-6 border-t border-muted" />;
           },
           p({ children }) {
-            return <p className="my-2">{children}</p>;
+            return <p className="my-4 leading-relaxed">{children}</p>;
           },
           strong({ children }) {
             return <strong className="font-bold">{children}</strong>;
@@ -157,6 +186,51 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content }) => {
               );
             }
             return <input type={type} {...props} />;
+          },
+          // Support for definition lists
+          dl({ children }) {
+            return <dl className="my-4">{children}</dl>;
+          },
+          dt({ children }) {
+            return <dt className="font-bold">{children}</dt>;
+          },
+          dd({ children }) {
+            return <dd className="ml-4 my-2">{children}</dd>;
+          },
+          // Support for abbreviations
+          abbr({ title, children }) {
+            return (
+              <abbr title={title} className="cursor-help border-b border-dotted">
+                {children}
+              </abbr>
+            );
+          },
+          // Support for superscript and subscript
+          sup({ children }) {
+            return <sup className="text-xs">{children}</sup>;
+          },
+          sub({ children }) {
+            return <sub className="text-xs">{children}</sub>;
+          },
+          // Support for keyboard keys
+          kbd({ children }) {
+            return (
+              <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted border border-gray-300 rounded shadow-sm">
+                {children}
+              </kbd>
+            );
+          },
+          // Support for footnotes (rendered at the bottom)
+          section({ children, className }) {
+            if (className?.includes('footnotes')) {
+              return (
+                <section className="mt-8 pt-6 border-t border-muted">
+                  <h2 className="text-lg font-bold mb-4">Footnotes</h2>
+                  {children}
+                </section>
+              );
+            }
+            return <section className={className}>{children}</section>;
           }
         }}
       >
