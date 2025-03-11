@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Folder as FolderIcon, ChevronDown, ChevronRight, Plus, FileText, Star, Edit, MoreVertical, Trash, Check, X, Move } from 'lucide-react';
 import { useAppContext } from '@/store/appContext';
@@ -25,6 +24,7 @@ const FolderList: React.FC = () => {
     updateNote,
     deleteNote,
     moveNote,
+    notes
   } = useAppContext();
 
   const [isOpen, setIsOpen] = useState<Record<string, boolean>>({});
@@ -49,7 +49,7 @@ const FolderList: React.FC = () => {
 
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
-      createFolder(newFolderName, `/MyNotable/${newFolderName}`);
+      createFolder(newFolderName, `/Quillboard/${newFolderName}`);
       setNewFolderName('');
       setNewFolderDialogOpen(false);
     }
@@ -57,9 +57,15 @@ const FolderList: React.FC = () => {
 
   const handleCreateNote = () => {
     if (newNoteName.trim() && currentFolder) {
-      createNote(currentFolder.id, newNoteName);
+      const defaultContent = `# ${newNoteName}\n\nStart writing your note here...`;
+      createNote(currentFolder.id, newNoteName, defaultContent);
       setNewNoteName('');
       setNewNoteDialogOpen(false);
+      
+      setIsOpen((prev) => ({
+        ...prev,
+        [currentFolder.id]: true,
+      }));
     }
   };
 
@@ -272,9 +278,9 @@ const FolderList: React.FC = () => {
 
               {isOpen[folder.id] && (
                 <div className="ml-4 pl-2 border-l border-sidebar-border">
-                  {folder.notes.length > 0 ? (
+                  {notes.filter(note => note.folderId === folder.id).length > 0 ? (
                     <>
-                      {folder.notes.map((note) => (
+                      {notes.filter(note => note.folderId === folder.id).map((note) => (
                         <div
                           key={note.id}
                           className={cn(
@@ -387,7 +393,6 @@ const FolderList: React.FC = () => {
         </div>
       </ScrollArea>
 
-      {/* New Folder Dialog */}
       <Dialog open={newFolderDialogOpen} onOpenChange={setNewFolderDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -418,7 +423,6 @@ const FolderList: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* New Note Dialog */}
       <Dialog open={newNoteDialogOpen} onOpenChange={setNewNoteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -449,7 +453,6 @@ const FolderList: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Move Note Dialog */}
       <Dialog open={moveNoteDialogOpen} onOpenChange={setMoveNoteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

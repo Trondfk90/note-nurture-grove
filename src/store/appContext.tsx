@@ -50,10 +50,10 @@ const DEMO_FOLDER: Folder = {
 
 const WELCOME_NOTE: Note = {
   id: 'welcome-note',
-  title: 'Welcome to Notable',
-  content: `# Welcome to Notable ✨
+  title: 'Welcome to Quillboard',
+  content: `# Welcome to Quillboard ✨
 
-Notable is a powerful, yet simple note-taking application that helps you organize your thoughts, ideas, and knowledge in a beautiful interface.
+Quillboard is a powerful, yet simple note-taking application that helps you organize your thoughts, ideas, and knowledge in a beautiful interface.
 
 ## Key Features
 
@@ -86,7 +86,7 @@ const MARKDOWN_NOTE: Note = {
   title: 'Markdown Formatting Guide',
   content: `# Markdown Formatting Guide
 
-Notable uses [GitHub-flavored Markdown](https://guides.github.com/features/mastering-markdown/) for note formatting. Here's a quick reference:
+Quillboard uses [GitHub-flavored Markdown](https://guides.github.com/features/mastering-markdown/) for note formatting. Here's a quick reference:
 
 ## Basic Syntax
 
@@ -203,11 +203,11 @@ const MATH_DIAGRAMS_NOTE: Note = {
   title: 'Math & Diagrams',
   content: `# Math Equations & Diagrams
 
-Notable supports both mathematical equations and diagrams to help you create rich, visual notes.
+Quillboard supports both mathematical equations and diagrams to help you create rich, visual notes.
 
 ## Mathematical Equations
 
-Notable supports [KaTeX](https://katex.org/) for mathematical equations and [AsciiMath](http://asciimath.org) for simpler math notation.
+Quillboard supports [KaTeX](https://katex.org/) for mathematical equations and [AsciiMath](http://asciimath.org) for simpler math notation.
 
 ### KaTeX Examples
 
@@ -247,7 +247,7 @@ $sum_(i=1)^n i^3=((n(n+1))/2)^2$
 
 ## Diagrams with Mermaid
 
-Notable supports [Mermaid](https://mermaid-js.github.io/mermaid/) for creating diagrams directly in your notes. Here are some examples:
+Quillboard supports [Mermaid](https://mermaid-js.github.io/mermaid/) for creating diagrams directly in your notes. Here are some examples:
 
 ### Flowchart
 
@@ -325,7 +325,7 @@ const ORGANIZING_NOTE: Note = {
   title: 'Organizing Your Notes',
   content: `# Organizing Your Notes
 
-Notable provides several ways to organize your notes efficiently:
+Quillboard provides several ways to organize your notes efficiently:
 
 ## Folders
 
@@ -387,7 +387,7 @@ const ATTACHMENTS_NOTE: Note = {
   title: 'Working with Attachments',
   content: `# Working with Attachments
 
-Notable allows you to add various types of attachments to your notes, making them more informative and useful.
+Quillboard allows you to add various types of attachments to your notes, making them more informative and useful.
 
 ## Adding Attachments
 
@@ -415,7 +415,7 @@ Copy an image to your clipboard (e.g., a screenshot) and paste it directly into 
 
 ## Supported File Types
 
-Notable supports various file types as attachments:
+Quillboard supports various file types as attachments:
 
 - **Images**: jpg, jpeg, png, gif, webp
 - **Documents**: pdf, doc, docx, txt
@@ -452,9 +452,143 @@ The Attachments Manager allows you to:
 
 ## Try it out!
 
-Add an image or document to this note to see how attachments work in Notable.
+Add an image or document to this note to see how attachments work in Quillboard.
 `,
   tags: ['tutorial', 'attachments'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
+};
+
+// Let's add some additional notes to make the demo more complete
+const DAILY_JOURNAL_NOTE: Note = {
+  id: 'daily-journal-note',
+  title: 'Daily Journal Template',
+  content: `# Daily Journal Template
+
+Use this template to keep track of your daily activities, thoughts, and progress.
+
+## Morning Reflections
+- **Today's Focus**: 
+- **Mood**: 
+- **Energy Level (1-10)**: 
+
+## Tasks for Today
+- [ ] 
+- [ ] 
+- [ ] 
+
+## Notes & Ideas
+
+...
+
+## End of Day Reflection
+- **Accomplishments**:
+- **Challenges**:
+- **Insights**:
+- **Tomorrow's Focus**:
+
+---
+*Template created in Quillboard*
+`,
+  tags: ['template', 'productivity'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
+};
+
+const MEETING_NOTES_TEMPLATE: Note = {
+  id: 'meeting-notes-template',
+  title: 'Meeting Notes Template',
+  content: `# Meeting Notes Template
+
+## Meeting Information
+- **Date**: 
+- **Time**: 
+- **Location**: 
+- **Meeting Type**: 
+- **Facilitator**: 
+- **Attendees**: 
+
+## Agenda
+1. 
+2. 
+3. 
+
+## Discussion Points
+### Topic 1
+- 
+- 
+- 
+
+### Topic 2
+- 
+- 
+- 
+
+## Action Items
+- [ ] Task 1 - Assigned to: | Due date:
+- [ ] Task 2 - Assigned to: | Due date:
+- [ ] Task 3 - Assigned to: | Due date:
+
+## Decisions Made
+1. 
+2. 
+
+## Next Meeting
+- **Date**: 
+- **Time**: 
+- **Location**: 
+- **Preliminary Agenda**: 
+
+---
+*Template created in Quillboard*
+`,
+  tags: ['template', 'meetings'],
+  folderId: 'demo-folder',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  favorite: false,
+};
+
+const CORNELL_NOTES_TEMPLATE: Note = {
+  id: 'cornell-notes-template',
+  title: 'Cornell Notes Template',
+  content: `# Cornell Notes Template
+
+## Topic/Subject: 
+
+## Date: 
+
+---
+
+### Key Points/Questions | Notes
+--------------------------------|------------------------------------------
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+                                |
+
+## Summary:
+
+
+---
+*Template created in Quillboard*
+`,
+  tags: ['template', 'study'],
   folderId: 'demo-folder',
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -470,6 +604,10 @@ const INITIAL_TAGS: Tag[] = [
   { id: uuidv4(), name: 'advanced', displayName: 'Advanced', color: '#607D8B' },
   { id: uuidv4(), name: 'organization', displayName: 'Organization', color: '#795548' },
   { id: uuidv4(), name: 'attachments', displayName: 'Attachments', color: '#009688' },
+  { id: uuidv4(), name: 'template', displayName: 'Template', color: '#E91E63' },
+  { id: uuidv4(), name: 'productivity', displayName: 'Productivity', color: '#3F51B5' },
+  { id: uuidv4(), name: 'meetings', displayName: 'Meetings', color: '#FFC107' },
+  { id: uuidv4(), name: 'study', displayName: 'Study', color: '#8BC34A' },
 ];
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -485,12 +623,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentTags, setCurrentTags] = useState<string[]>([]);
 
   useEffect(() => {
+    // Initialize with all demo notes
+    const initialNotes = [
+      WELCOME_NOTE, 
+      MARKDOWN_NOTE, 
+      MATH_DIAGRAMS_NOTE, 
+      ORGANIZING_NOTE, 
+      ATTACHMENTS_NOTE,
+      DAILY_JOURNAL_NOTE,
+      MEETING_NOTES_TEMPLATE,
+      CORNELL_NOTES_TEMPLATE
+    ];
+    
+    setNotes(initialNotes);
+    
     setFolders((prevFolders) => {
       return prevFolders.map((folder) => {
         if (folder.id === DEMO_FOLDER.id) {
           return {
             ...folder,
-            notes: [WELCOME_NOTE, MARKDOWN_NOTE, MATH_DIAGRAMS_NOTE, ORGANIZING_NOTE, ATTACHMENTS_NOTE],
+            notes: initialNotes,
           };
         }
         return folder;

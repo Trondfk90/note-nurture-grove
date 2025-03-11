@@ -156,6 +156,11 @@ const SearchCommandPalette = () => {
 };
 
 const Index: React.FC = () => {
+  // Update document title
+  useEffect(() => {
+    document.title = "Quillboard - Smart Note Taking";
+  }, []);
+
   return (
     <AppProvider>
       <div className="h-screen w-screen flex flex-col overflow-hidden">
