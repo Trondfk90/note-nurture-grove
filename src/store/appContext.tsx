@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Folder, Note, Tag, ViewMode, Attachment } from '@/types';
@@ -1128,4 +1129,216 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     setFolders((prevFolders) => {
-      return prevFolders.map
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId) {
+            return {
+              ...note,
+              favorite: !note.favorite,
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+  };
+
+  const filteredNotes = searchQuery
+    ? notes.filter(
+        (note) =>
+          note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : currentFolder
+    ? currentFolder.notes
+    : [];
+
+  const addAttachment = async (noteId: string, file: File): Promise<Attachment> => {
+    // In a real app, this would upload the file to a server or store it in IndexedDB
+    // For this demo, we'll create a simulated attachment with a data URL
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const attachment: Attachment = {
+          id: uuidv4(),
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: reader.result as string,
+          createdAt: new Date(),
+        };
+
+        setNotes((prevNotes) => {
+          return prevNotes.map((note) => {
+            if (note.id === noteId) {
+              const updatedNote = {
+                ...note,
+                attachments: note.attachments ? [...note.attachments, attachment] : [attachment],
+                updatedAt: new Date(),
+              };
+              return updatedNote;
+            }
+            return note;
+          });
+        });
+
+        setFolders((prevFolders) => {
+          return prevFolders.map((folder) => {
+            const updatedNotes = folder.notes.map((note) => {
+              if (note.id === noteId) {
+                return {
+                  ...note,
+                  attachments: note.attachments ? [...note.attachments, attachment] : [attachment],
+                  updatedAt: new Date(),
+                };
+              }
+              return note;
+            });
+
+            return {
+              ...folder,
+              notes: updatedNotes,
+            };
+          });
+        });
+
+        if (currentNote?.id === noteId) {
+          setCurrentNoteState((prevNote) => {
+            if (prevNote) {
+              return {
+                ...prevNote,
+                attachments: prevNote.attachments ? [...prevNote.attachments, attachment] : [attachment],
+                updatedAt: new Date(),
+              };
+            }
+            return prevNote;
+          });
+        }
+
+        resolve(attachment);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const deleteAttachment = (noteId: string, attachmentId: string) => {
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.id === noteId && note.attachments) {
+          return {
+            ...note,
+            attachments: note.attachments.filter((a) => a.id !== attachmentId),
+            updatedAt: new Date(),
+          };
+        }
+        return note;
+      });
+    });
+
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId && note.attachments) {
+            return {
+              ...note,
+              attachments: note.attachments.filter((a) => a.id !== attachmentId),
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+
+    if (currentNote?.id === noteId) {
+      setCurrentNoteState((prevNote) => {
+        if (prevNote && prevNote.attachments) {
+          return {
+            ...prevNote,
+            attachments: prevNote.attachments.filter((a) => a.id !== attachmentId),
+            updatedAt: new Date(),
+          };
+        }
+        return prevNote;
+      });
+    }
+
+    toast({
+      title: 'Attachment Deleted',
+      description: 'The attachment has been removed from this note.',
+    });
+  };
+
+  const updateNoteContent = setEditedContent => {
+    setEditedContent(content => {
+      if (currentNote) {
+        const updatedNote = {
+          ...currentNote,
+          content
+        };
+        updateNote(updatedNote);
+      }
+      return content;
+    });
+  };
+
+  return (
+    <AppContext.Provider
+      value={{
+        folders,
+        notes,
+        tags,
+        currentFolder,
+        currentNote,
+        currentTags,
+        viewMode,
+        isEditing,
+        searchQuery,
+        createFolder,
+        updateFolder,
+        deleteFolder,
+        createNote,
+        updateNote,
+        deleteNote,
+        moveNote,
+        setCurrentFolder,
+        setCurrentNote,
+        setViewMode,
+        setIsEditing,
+        addTag,
+        updateTag,
+        removeTag,
+        addTagToNote,
+        removeTagFromNote,
+        setSearchQuery,
+        toggleFavorite,
+        filteredNotes,
+        addAttachment,
+        deleteAttachment,
+        updateNoteContent,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+};
+
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
