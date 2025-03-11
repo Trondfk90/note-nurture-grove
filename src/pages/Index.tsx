@@ -7,6 +7,13 @@ import NoteEditor from '@/components/NoteEditor';
 import Toolbar from '@/components/Toolbar';
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { File, Folder, Hash, KeyboardIcon } from 'lucide-react';
+import AIAssistant from '@/components/AIAssistant';
+import { initMockAPI } from '@/mocks/api';
+
+// Initialize mock API
+if (process.env.NODE_ENV === 'development') {
+  initMockAPI();
+}
 
 // Search component that will be used inside the provider
 const SearchCommandPalette = () => {
@@ -155,6 +162,14 @@ const SearchCommandPalette = () => {
   );
 };
 
+const AIAssistantContainer = () => {
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <AIAssistant />
+    </div>
+  );
+};
+
 const Index: React.FC = () => {
   // Update document title
   useEffect(() => {
@@ -183,6 +198,7 @@ const Index: React.FC = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
         <SearchCommandPalette />
+        <AIAssistantContainer />
       </div>
     </AppProvider>
   );
