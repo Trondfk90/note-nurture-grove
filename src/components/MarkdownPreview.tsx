@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import 'katex/dist/katex.min.css';

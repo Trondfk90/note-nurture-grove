@@ -66,11 +66,6 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       // Scroll to make the line visible (centered if possible)
       const lineHeight = 1.675 * 16; // From the CSS
       textareaRef.current.scrollTop = (targetLine - 5) * lineHeight;
-      
-      // Update cursor position to highlight the line
-      const linesBeforeCursor = textBeforePosition.split('\n');
-      const cursorLine = linesBeforeCursor.length;
-      const cursorColumn = linesBeforeCursor[linesBeforeCursor.length - 1].length + 1;
     }
   }));
 
@@ -92,23 +87,6 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
 
   // Function to create a textarea with highlighted search matches
   const renderTextAreaWithHighlights = () => {
-    if (!highlightSearchMatches || searchMatches.length === 0 || !searchQuery) {
-      return (
-        <Textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onClick={handleSelect}
-          onKeyUp={handleSelect}
-          onSelect={handleSelect}
-          placeholder={placeholder}
-          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
-          style={{ minHeight: '100%' }}
-          disabled={disabled}
-        />
-      );
-    }
-
     return (
       <div className="relative flex-1 h-full">
         <Textarea
@@ -119,16 +97,24 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
           onKeyUp={handleSelect}
           onSelect={handleSelect}
           placeholder={placeholder}
-          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem] bg-transparent"
-          style={{ minHeight: '100%', zIndex: 2, position: 'relative', caretColor: 'black' }}
+          className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem]"
+          style={{ 
+            minHeight: '100%', 
+            position: 'relative', 
+            zIndex: 2, 
+            background: 'transparent',
+            caretColor: 'black' 
+          }}
           disabled={disabled}
         />
         <div 
           ref={highlightsRef}
-          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent overflow-auto"
+          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none overflow-auto"
           style={{ zIndex: 1 }}
         >
-          <SearchHighlights value={value} searchMatches={searchMatches} />
+          {highlightSearchMatches && searchMatches.length > 0 && (
+            <SearchHighlights value={value} searchMatches={searchMatches} />
+          )}
         </div>
       </div>
     );

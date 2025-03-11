@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import CodeEditor, { CodeEditorRef } from '@/components/CodeEditor';
 import MarkdownPreview from '@/components/MarkdownPreview';
-import { Note, Attachment } from '@/types';
+import { Note } from '@/types';
 
 interface EditorContentProps {
   note: Note;
@@ -61,7 +61,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
                 className="w-full h-full min-h-[calc(100vh-280px)]"
                 placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                 disabled={!isEditing}
-                highlightSearchMatches={searchResults.length > 0}
+                highlightSearchMatches={searchQuery.length > 0}
                 searchQuery={searchQuery}
               />
             </div>
@@ -74,7 +74,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
                 content={editedContent} 
                 attachments={note.attachments}
                 searchQuery={searchQuery}
-                highlightSearchMatches={searchResults.length > 0}
+                highlightSearchMatches={searchQuery.length > 0}
               />
             </div>
           </ScrollArea>
@@ -93,7 +93,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
                   className="w-full h-full min-h-[calc(100vh-280px)]"
                   placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                   disabled={!isEditing}
-                  highlightSearchMatches={searchResults.length > 0}
+                  highlightSearchMatches={searchQuery.length > 0}
                   searchQuery={searchQuery}
                 />
               </div>
@@ -104,7 +104,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
                   content={editedContent} 
                   attachments={note.attachments}
                   searchQuery={searchQuery}
-                  highlightSearchMatches={searchResults.length > 0}
+                  highlightSearchMatches={searchQuery.length > 0}
                 />
               </div>
             </ScrollArea>

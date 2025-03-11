@@ -30,6 +30,7 @@ export const useScrollSync = ({
       
       if (highlights) {
         highlights.scrollTop = textarea.scrollTop;
+        highlights.style.transform = `translateY(0)`; // Reset any transform
       }
     };
     
