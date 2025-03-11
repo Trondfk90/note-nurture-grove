@@ -28,7 +28,6 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
 }, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const highlightsRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [cursorLine, setCursorLine] = useState(1);
   const [cursorColumn, setCursorColumn] = useState(1);
@@ -111,18 +110,12 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   useEffect(() => {
     const textarea = textareaRef.current;
     const lineNumbers = lineNumbersRef.current;
-    const highlights = highlightsRef.current;
     
     if (!textarea || !lineNumbers) return;
     
     // Function to sync line numbers scroll with textarea scroll
     const syncScroll = () => {
-      if (lineNumbers) {
-        lineNumbers.scrollTop = textarea.scrollTop;
-      }
-      if (highlights) {
-        highlights.scrollTop = textarea.scrollTop;
-      }
+      lineNumbers.scrollTop = textarea.scrollTop;
     };
     
     // Handle all events that might cause scrolling
@@ -180,7 +173,7 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
     }
 
     return (
-      <div className="relative flex-1 h-full overflow-hidden">
+      <div className="relative flex-1 h-full">
         <Textarea
           ref={textareaRef}
           value={value}
@@ -190,48 +183,35 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
           onSelect={handleSelect}
           placeholder={placeholder}
           className="w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-2 rounded-none leading-[1.675rem] bg-transparent"
-          style={{ 
-            minHeight: '100%', 
-            zIndex: 2, 
-            position: 'relative', 
-            caretColor: 'black'
-          }}
+          style={{ minHeight: '100%', zIndex: 2, position: 'relative', caretColor: 'black' }}
           disabled={disabled}
         />
         <div 
-          ref={highlightsRef}
-          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent overflow-hidden overflow-y-auto"
+          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent"
           style={{ zIndex: 1 }}
         >
-          <div className="relative w-full h-full">
-            {searchMatches.map((match, idx) => {
-              // Create a string of all content up to this match
-              const beforeMatch = value.substring(0, match.start);
-              const matchText = value.substring(match.start, match.end);
-              
-              // Count the number of newlines before this match to get the line number
-              const linesBefore = beforeMatch.split('\n');
-              const lineNumber = linesBefore.length - 1;
-              
-              // Get the position within the current line
-              const lastLine = linesBefore[linesBefore.length - 1];
-              const charPosition = lastLine.length;
-              
-              return (
-                <div 
-                  key={idx}
-                  className="absolute bg-yellow-200 rounded-sm" 
-                  style={{
-                    top: `calc(${lineNumber} * 1.675rem)`,
-                    left: `calc(${charPosition} * 0.6125rem)`,
-                    height: '1.675rem',
-                    width: `calc(${matchText.length} * 0.6125rem)`,
-                    opacity: 0.5
-                  }}
-                />
-              );
-            })}
-          </div>
+          {searchMatches.map((match, idx) => {
+            const beforeMatch = value.substring(0, match.start);
+            const matchText = value.substring(match.start, match.end);
+            
+            // Calculate position for the highlight
+            const matchLines = beforeMatch.split('\n');
+            const lastLine = matchLines[matchLines.length - 1];
+            
+            return (
+              <span 
+                key={idx}
+                className="absolute bg-yellow-200 rounded-sm" 
+                style={{
+                  top: `calc(1.675rem * ${matchLines.length - 1})`,
+                  left: `calc(${lastLine.length} * 0.6125rem + 0.5rem)`,
+                  height: '1.675rem',
+                  width: `calc(${matchText.length} * 0.6125rem)`,
+                  opacity: 0.5
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     );
