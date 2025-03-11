@@ -22,7 +22,7 @@ interface MarkdownPreviewProps {
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments = [] }) => {
   const mermaidContainerRef = useRef<HTMLDivElement>(null);
   
-  // Initialize mermaid
+  // Initialize mermaid only once when component mounts
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: true,
@@ -31,20 +31,26 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
     });
   }, []);
   
-  // Force re-render of mermaid diagrams whenever content changes or component mounts
+  // Process mermaid diagrams only when content changes
   useEffect(() => {
-    if (mermaidContainerRef.current) {
-      // Add a small delay to ensure the DOM is fully updated
-      const timer = setTimeout(() => {
+    // Use a debounced approach to prevent excessive rendering
+    const renderDiagrams = () => {
+      if (mermaidContainerRef.current) {
         try {
-          mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+          // Find elements with class 'mermaid' that haven't been processed
+          const diagrams = document.querySelectorAll('.mermaid:not([data-processed="true"])');
+          if (diagrams.length > 0) {
+            mermaid.init(undefined, diagrams);
+          }
         } catch (error) {
           console.error('Mermaid initialization error:', error);
         }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
+      }
+    };
+    
+    // Small delay to ensure the DOM is updated
+    const timer = setTimeout(renderDiagrams, 200);
+    return () => clearTimeout(timer);
   }, [content]);
 
   const CopyButton = ({ content }: { content: string }) => {
