@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useAppContext } from '@/store/appContext';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -162,10 +161,40 @@ const SearchCommandPalette = () => {
   );
 };
 
-const AIAssistantContainer = () => {
+// Main application with panels
+const MainApplication = () => {
+  const { showAIPanel } = useAppContext();
+  
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <AIAssistant />
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <Toolbar />
+      <ResizablePanelGroup
+        direction="horizontal"
+        className="flex-1 bg-background"
+      >
+        <ResizablePanel
+          defaultSize={20}
+          minSize={15}
+          maxSize={30}
+          className="bg-sidebar"
+        >
+          <FolderList />
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={showAIPanel ? 60 : 80}>
+          <NoteEditor />
+        </ResizablePanel>
+        
+        {showAIPanel && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={20} minSize={20} maxSize={40}>
+              <AIAssistant />
+            </ResizablePanel>
+          </>
+        )}
+      </ResizablePanelGroup>
+      <SearchCommandPalette />
     </div>
   );
 };
@@ -178,28 +207,7 @@ const Index: React.FC = () => {
 
   return (
     <AppProvider>
-      <div className="h-screen w-screen flex flex-col overflow-hidden">
-        <Toolbar />
-        <ResizablePanelGroup
-          direction="horizontal"
-          className="flex-1 bg-background"
-        >
-          <ResizablePanel
-            defaultSize={20}
-            minSize={15}
-            maxSize={30}
-            className="bg-sidebar"
-          >
-            <FolderList />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={80}>
-            <NoteEditor />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-        <SearchCommandPalette />
-        <AIAssistantContainer />
-      </div>
+      <MainApplication />
     </AppProvider>
   );
 };

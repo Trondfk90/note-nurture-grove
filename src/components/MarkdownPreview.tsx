@@ -1,18 +1,18 @@
 
 import React, { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import 'katex/dist/katex.min.css';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
-import 'katex/dist/katex.min.css';
 import { Attachment } from '@/types';
-import { Copy, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import mermaid from 'mermaid';
+import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -21,11 +21,13 @@ interface MarkdownPreviewProps {
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments = [] }) => {
   const mermaidContainerRef = useRef<HTMLDivElement>(null);
+  const processedDiagrams = useRef(new Set<string>());
+  const { toast } = useToast();
   
   // Initialize mermaid only once when component mounts
   useEffect(() => {
     mermaid.initialize({
-      startOnLoad: true,
+      startOnLoad: false,
       theme: 'default',
       securityLevel: 'loose',
     });
@@ -38,10 +40,22 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
       if (mermaidContainerRef.current) {
         try {
           // Find elements with class 'mermaid' that haven't been processed
-          const diagrams = document.querySelectorAll('.mermaid:not([data-processed="true"])');
-          if (diagrams.length > 0) {
-            mermaid.init(undefined, diagrams);
-          }
+          const diagramElements = document.querySelectorAll('.mermaid');
+          
+          diagramElements.forEach((element) => {
+            const diagramId = element.id || element.getAttribute('data-id');
+            if (diagramId && !processedDiagrams.current.has(diagramId)) {
+              try {
+                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode) => {
+                  element.innerHTML = svgCode;
+                  element.setAttribute('data-processed', 'true');
+                  processedDiagrams.current.add(diagramId);
+                });
+              } catch (err) {
+                console.error('Error rendering specific diagram:', err);
+              }
+            }
+          });
         } catch (error) {
           console.error('Mermaid initialization error:', error);
         }
@@ -54,155 +68,95 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
   }, [content]);
 
   const CopyButton = ({ content }: { content: string }) => {
-    const [copied, setCopied] = React.useState(false);
-
-    const copy = () => {
-      navigator.clipboard.writeText(content);
-      setCopied(true);
-      toast({
-        title: "Copied to clipboard",
-        description: "The code has been copied to your clipboard",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    };
-
     return (
-      <Button 
-        className="absolute right-2 top-2 h-8 w-8 p-0 opacity-60 hover:opacity-100" 
-        variant="secondary" 
-        size="icon" 
-        onClick={copy}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 h-6 w-6 opacity-50 hover:opacity-100"
+        onClick={() => {
+          navigator.clipboard.writeText(content);
+          toast({
+            title: "Copied to clipboard",
+            description: "Code has been copied to your clipboard.",
+          });
+        }}
       >
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        <Copy className="h-3 w-3" />
       </Button>
     );
   };
 
-  const processContent = (markdown: string) => {
-    // Process @attachment links
-    let processedMarkdown = markdown.replace(
-      /(!?\[.*?\])\(@attachment\/([^)]+)\)/g,
-      (match, linkText, attachmentId) => {
-        const attachment = attachments.find(att => att.id === attachmentId);
-        if (attachment) {
-          return `${linkText}(${attachment.url})`;
-        }
-        return match;
-      }
-    );
-
-    // Process @note links
-    processedMarkdown = processedMarkdown.replace(
-      /(!?\[.*?\])\(@note\/([^)]+)\)/g,
-      (match, linkText) => {
-        return `${linkText}(javascript:void(0))`;
-      }
-    );
-
-    // Process @tag links
-    processedMarkdown = processedMarkdown.replace(
-      /(!?\[.*?\])\(@tag\/([^)]+)\)/g,
-      (match, linkText) => {
-        return `${linkText}(javascript:void(0))`;
-      }
-    );
-
-    // Process @search links
-    processedMarkdown = processedMarkdown.replace(
-      /(!?\[.*?\])\(@search\/([^)]+)\)/g,
-      (match, linkText) => {
-        return `${linkText}(javascript:void(0))`;
-      }
-    );
-
-    // Process wiki-style links [[text|link]] or [[link]]
-    processedMarkdown = processedMarkdown.replace(
-      /\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g,
-      (match, text, link) => {
-        if (link) {
-          return `[${text}](javascript:void(0))`;
-        }
-        return `[${text}](javascript:void(0))`;
-      }
-    );
-
-    return processedMarkdown;
-  };
-
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none" ref={mermaidContainerRef}>
+    <div 
+      ref={mermaidContainerRef}
+      className="prose prose-stone dark:prose-invert max-w-none p-4 prose-pre:relative"
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
-          code({ node, className, children, ...props }) {
+          // Define custom components for the markdown
+          code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             const codeContent = String(children).replace(/\n$/, '');
             
-            // Handle mermaid diagrams
-            if (match && match[1] === 'mermaid') {
-              return (
-                <div className="mermaid bg-gray-100 dark:bg-gray-800/50 p-4 rounded-md my-6 relative">
+            return !inline && match ? (
+              <div className="relative">
+                <SyntaxHighlighter
+                  language={match[1]}
+                  style={atomOneLight}
+                  PreTag="div"
+                  {...props}
+                >
                   {codeContent}
-                </div>
-              );
-            }
-            
-            // Handle regular code blocks
-            if (match) {
-              return (
-                <div className="relative group my-4">
-                  <SyntaxHighlighter
-                    style={dracula as any}
-                    language={match[1]}
-                    PreTag="div"
-                  >
-                    {codeContent}
-                  </SyntaxHighlighter>
-                  <CopyButton content={codeContent} />
-                </div>
-              );
-            }
-            
-            // Handle inline code
-            return (
+                </SyntaxHighlighter>
+                <CopyButton content={codeContent} />
+              </div>
+            ) : (
               <code className={className} {...props}>
                 {children}
               </code>
             );
           },
-          a({ node, children, href, ...props }) {
-            if (href?.startsWith('javascript:void(0)')) {
+          // Add unique IDs to mermaid diagrams
+          pre({ node, className, children, ...props }) {
+            const isMermaid = 
+              className === 'language-mermaid' || 
+              (children[0]?.props?.className === 'language-mermaid');
+            
+            if (isMermaid) {
+              const diagramContent = String(children[0]?.props?.children || '');
+              const diagramId = `diagram-${Math.random().toString(36).substring(2, 11)}`;
+              
               return (
-                <a
-                  className="cursor-pointer text-primary hover:text-primary/80"
-                  onClick={(e) => e.preventDefault()}
-                  {...props}
+                <div 
+                  id={diagramId}
+                  data-id={diagramId}
+                  className="mermaid"
                 >
-                  {children}
-                </a>
+                  {diagramContent}
+                </div>
               );
             }
-            return (
-              <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                {children}
-              </a>
-            );
+            
+            return <pre className={className} {...props}>{children}</pre>;
           },
-          img({ node, src, alt, ...props }) {
-            return (
-              <img 
-                src={src} 
-                alt={alt || ''} 
-                className="max-w-full rounded-md my-4" 
-                loading="lazy"
-                {...props} 
-              />
-            );
+          img({ src, alt, ...props }) {
+            // Handle attachments with data URLs
+            if (src && src.startsWith('attachment:')) {
+              const attachmentId = src.replace('attachment:', '');
+              const attachment = attachments.find(a => a.id === attachmentId);
+              
+              if (attachment && attachment.dataUrl) {
+                return <img src={attachment.dataUrl} alt={alt || 'attachment'} {...props} />;
+              }
+            }
+            
+            return <img src={src} alt={alt} {...props} />;
           }
         }}
       >
-        {processContent(content)}
+        {content}
       </ReactMarkdown>
     </div>
   );

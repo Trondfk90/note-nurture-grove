@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, FileText, Folder, KeyboardIcon, Monitor } from 'lucide-react';
+import { Search, Plus, FileText, Folder, KeyboardIcon, Monitor, Bot } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,6 +19,8 @@ const Toolbar: React.FC = () => {
     currentFolder,
     setSearchQuery,
     searchQuery,
+    setShowAIPanel,
+    showAIPanel,
   } = useAppContext();
 
   const [newFolderDialogOpen, setNewFolderDialogOpen] = useState(false);
@@ -59,6 +62,10 @@ const Toolbar: React.FC = () => {
     }));
   };
 
+  const toggleAIPanel = () => {
+    setShowAIPanel(!showAIPanel);
+  };
+
   return (
     <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between">
       <div className="flex items-center">
@@ -66,72 +73,89 @@ const Toolbar: React.FC = () => {
           <Monitor className="h-5 w-5 mr-2 text-primary" />
           <h1 className="text-xl font-semibold">TFK Notes</h1>
         </div>
-        <div className="relative flex-1 max-w-sm">
-          <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center">
-            <Search className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <Popover open={searchOptionsOpen} onOpenChange={setSearchOptionsOpen}>
-            <Input
-              placeholder="Search notes, folders, tags... (Ctrl+K or /)"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="pl-8 pr-10 h-9"
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <KeyboardIcon className="h-3.5 w-3.5" />
-                      </Button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Search options</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        <div className="relative flex-1 max-w-sm flex gap-2 items-center">
+          <div className="relative flex-1">
+            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center">
+              <Search className="h-4 w-4 text-muted-foreground" />
             </div>
-            <PopoverContent className="w-60">
-              <div className="space-y-3">
-                <h4 className="font-medium">Search Options</h4>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="include-titles">Include titles</Label>
-                  <Switch 
-                    id="include-titles" 
-                    checked={searchOptions.includeTitles}
-                    onCheckedChange={() => handleOptionChange('includeTitles')}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="include-content">Include content</Label>
-                  <Switch 
-                    id="include-content" 
-                    checked={searchOptions.includeContent}
-                    onCheckedChange={() => handleOptionChange('includeContent')}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="include-tags">Include tags</Label>
-                  <Switch 
-                    id="include-tags" 
-                    checked={searchOptions.includeTags}
-                    onCheckedChange={() => handleOptionChange('includeTags')}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="case-sensitive">Case sensitive</Label>
-                  <Switch 
-                    id="case-sensitive" 
-                    checked={searchOptions.caseSensitive}
-                    onCheckedChange={() => handleOptionChange('caseSensitive')}
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground pt-2">
-                  Press <kbd className="px-1 py-0.5 bg-muted rounded">Ctrl+K</kbd> or <kbd className="px-1 py-0.5 bg-muted rounded">/</kbd> to open search dialog
-                </div>
+            <Popover open={searchOptionsOpen} onOpenChange={setSearchOptionsOpen}>
+              <Input
+                placeholder="Search notes, folders, tags... (Ctrl+K or /)"
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="pl-8 pr-10 h-9"
+              />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <KeyboardIcon className="h-3.5 w-3.5" />
+                        </Button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Search options</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            </PopoverContent>
-          </Popover>
+              <PopoverContent className="w-60">
+                <div className="space-y-3">
+                  <h4 className="font-medium">Search Options</h4>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-titles">Include titles</Label>
+                    <Switch 
+                      id="include-titles" 
+                      checked={searchOptions.includeTitles}
+                      onCheckedChange={() => handleOptionChange('includeTitles')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-content">Include content</Label>
+                    <Switch 
+                      id="include-content" 
+                      checked={searchOptions.includeContent}
+                      onCheckedChange={() => handleOptionChange('includeContent')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="include-tags">Include tags</Label>
+                    <Switch 
+                      id="include-tags" 
+                      checked={searchOptions.includeTags}
+                      onCheckedChange={() => handleOptionChange('includeTags')}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="case-sensitive">Case sensitive</Label>
+                    <Switch 
+                      id="case-sensitive" 
+                      checked={searchOptions.caseSensitive}
+                      onCheckedChange={() => handleOptionChange('caseSensitive')}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground pt-2">
+                    Press <kbd className="px-1 py-0.5 bg-muted rounded">Ctrl+K</kbd> or <kbd className="px-1 py-0.5 bg-muted rounded">/</kbd> to open search dialog
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={showAIPanel ? "secondary" : "ghost"} 
+                  size="icon" 
+                  onClick={toggleAIPanel}
+                  className="h-9 w-9"
+                >
+                  <Bot className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>AI Assistant</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       <div className="flex items-center gap-2">
