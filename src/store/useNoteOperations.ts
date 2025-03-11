@@ -76,6 +76,7 @@ export const useNoteOperations = () => {
 
   return {
     notes,
+    setNotes, // Expose setNotes so it can be passed to other hooks
     currentNoteId,
     setCurrentNoteId,
     createNote,

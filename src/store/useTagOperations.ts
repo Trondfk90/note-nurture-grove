@@ -32,7 +32,12 @@ export const useTagOperations = () => {
   // Alias for compatibility
   const removeTag = deleteTag;
 
-  const addTagToNote = (noteId: string, tagName: string, notesArray: Note[], setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>) => {
+  const addTagToNote = (
+    noteId: string, 
+    tagName: string, 
+    notesArray: Note[], 
+    setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>
+  ) => {
     setNotesFunction((prevNotes) =>
       prevNotes.map((note) =>
         note.id === noteId && !note.tags.includes(tagName)
@@ -42,7 +47,12 @@ export const useTagOperations = () => {
     );
   };
 
-  const removeTagFromNote = (noteId: string, tagName: string, notesArray: Note[], setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>) => {
+  const removeTagFromNote = (
+    noteId: string, 
+    tagName: string, 
+    notesArray: Note[], 
+    setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>
+  ) => {
     setNotesFunction((prevNotes) =>
       prevNotes.map((note) =>
         note.id === noteId
@@ -52,7 +62,12 @@ export const useTagOperations = () => {
     );
   };
 
-  const removeTagFromAllNotes = (tagId: string, notesArray: Note[], setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>, tagsArray: Tag[]) => {
+  const removeTagFromAllNotes = (
+    tagId: string, 
+    notesArray: Note[], 
+    setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>, 
+    tagsArray: Tag[]
+  ) => {
     setNotesFunction((prevNotes) =>
       prevNotes.map((note) => ({
         ...note,

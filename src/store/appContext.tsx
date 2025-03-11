@@ -26,6 +26,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const {
     notes,
+    setNotes, // Get the setNotes function from useNoteOperations
     currentNoteId,
     setCurrentNoteId,
     createNote,
@@ -43,11 +44,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteTag,
     addTag,
     removeTag,
-    addTagToNote: baseAddTagToNote,
-    removeTagFromNote: baseRemoveTagFromNote,
+    addTagToNote,
+    removeTagFromNote,
     removeTagFromAllNotes
   } = useTagOperations();
   
+  // Pass setNotes to useAttachmentOperations
   const {
     addAttachment,
     removeAttachment,
@@ -59,13 +61,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [viewMode, setViewMode] = useState<ViewMode>('edit');
   const [showAIPanel, setShowAIPanel] = useState(false);
 
-  // Adapter functions for tag operations since they need notes and setNotes
-  const addTagToNote = (noteId: string, tagName: string) => {
-    baseAddTagToNote(noteId, tagName, notes, setNotes);
+  // Adapted functions that use notes and setNotes directly
+  const adaptedAddTagToNote = (noteId: string, tagName: string) => {
+    addTagToNote(noteId, tagName, notes, setNotes);
   };
 
-  const removeTagFromNote = (noteId: string, tagName: string) => {
-    baseRemoveTagFromNote(noteId, tagName, notes, setNotes);
+  const adaptedRemoveTagFromNote = (noteId: string, tagName: string) => {
+    removeTagFromNote(noteId, tagName, notes, setNotes);
   };
 
   // Derived states
@@ -139,8 +141,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     createTag,
     updateTag,
     deleteTag,
-    addTagToNote,
-    removeTagFromNote,
+    addTagToNote: adaptedAddTagToNote,
+    removeTagFromNote: adaptedRemoveTagFromNote,
     setShowAIPanel,
     toggleFavorite,
     addAttachment,
