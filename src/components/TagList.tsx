@@ -11,11 +11,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { toast } from '@/components/ui/use-toast';
 
 const TagList: React.FC = () => {
-  const { tags, currentTags, removeTag, addTag, updateTag } = useAppContext();
+  // Since currentTags doesn't exist in AppContextType, we'll use an empty array instead
+  const { tags, removeTag, addTag, updateTag, currentNote } = useAppContext();
   const [newTagDialogOpen, setNewTagDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#4CAF50');
-  const [selectedTags, setSelectedTags] = useState<string[]>(currentTags);
+  const [selectedTags, setSelectedTags] = useState<string[]>(currentNote?.tags || []);
   const [renamingTag, setRenamingTag] = useState<string | null>(null);
   const [renameTagValue, setRenameTagValue] = useState('');
   const [renameTagColor, setRenameTagColor] = useState('');

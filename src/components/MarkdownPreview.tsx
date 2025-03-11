@@ -46,7 +46,8 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             const diagramId = element.id || element.getAttribute('data-id');
             if (diagramId && !processedDiagrams.current.has(diagramId)) {
               try {
-                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode: string) => {
+                // Fixed: Properly cast the callback to match expected type
+                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode) => {
                   element.innerHTML = svgCode;
                   element.setAttribute('data-processed', 'true');
                   processedDiagrams.current.add(diagramId);
@@ -106,11 +107,11 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             
             return (
               <div className="relative">
+                {/* Fixed: SyntaxHighlighter props issue */}
                 <SyntaxHighlighter
                   language={match[1]}
-                  style={atomOneLight as any}
+                  style={atomOneLight}
                   PreTag="div"
-                  {...props}
                 >
                   {codeContent}
                 </SyntaxHighlighter>
