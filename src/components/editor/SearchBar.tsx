@@ -27,12 +27,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
   setShowSearch,
   setSearchResults
 }) => {
+  // Handle input change separately to prevent re-rendering issues
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+  
   return (
     <div className="px-4 py-2 border-b border-border flex items-center gap-2">
       <Input
         placeholder="Search in note..."
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={handleInputChange}
         className="flex-1"
         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         autoFocus

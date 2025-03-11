@@ -139,8 +139,12 @@ const NoteEditor: React.FC = () => {
   };
 
   useEffect(() => {
-    if (searchQuery) {
-      handleSearch();
+    if (searchQuery && searchQuery.length > 2) {
+      const timer = setTimeout(() => {
+        handleSearch();
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [searchQuery]);
 
