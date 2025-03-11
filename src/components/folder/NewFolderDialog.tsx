@@ -25,7 +25,10 @@ const NewFolderDialog: React.FC<NewFolderDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Folder</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="py-4">
+          <p className="text-sm text-muted-foreground mb-4">
+            Enter a name for the folder. You'll be prompted to select where to create it on your computer.
+          </p>
           <Input
             placeholder="Folder name"
             value={folderName}
@@ -44,7 +47,7 @@ const NewFolderDialog: React.FC<NewFolderDialogProps> = ({
             Cancel
           </Button>
           <Button type="button" onClick={onCreateFolder}>
-            Create
+            Create & Select Location
           </Button>
         </DialogFooter>
       </DialogContent>

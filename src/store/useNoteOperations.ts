@@ -3,6 +3,9 @@ import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Note, Attachment } from '@/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { fileSystemService } from '@/services/fileSystemService';
+import path from 'path-browserify';
+import { toast } from '@/components/ui/use-toast';
 
 export const useNoteOperations = () => {
   const [notes, setNotes] = useLocalStorage<Note[]>('notes', []);
@@ -10,7 +13,19 @@ export const useNoteOperations = () => {
     notes.length > 0 ? notes[0].id : null
   );
   
-  const createNote = (folderId: string, title: string, content: string = '') => {
+  const createNote = async (folderId: string, title: string, content: string = '') => {
+    const folder = JSON.parse(localStorage.getItem('folders') || '[]')
+      .find((f: any) => f.id === folderId);
+    
+    if (!folder) {
+      toast({
+        title: "Error creating note",
+        description: "Folder not found",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newNote: Note = {
       id: uuidv4(),
       folderId,
@@ -22,14 +37,33 @@ export const useNoteOperations = () => {
       createdAt: new Date(),
       updatedAt: new Date()
     };
+    
     setNotes((prevNotes) => [...prevNotes, newNote]);
     setCurrentNoteId(newNote.id);
+
+    // Save to file system if we're in Electron
+    const saveResult = await fileSystemService.saveNoteToFile(folder.path, newNote);
+    
+    if (saveResult) {
+      toast({
+        title: "Note created",
+        description: `Note "${title}" saved to ${folder.path}`
+      });
+    }
   };
 
-  const updateNote = (note: Note) => {
+  const updateNote = async (note: Note) => {
     setNotes((prevNotes) =>
       prevNotes.map((n) => (n.id === note.id ? { ...n, ...note, updatedAt: new Date() } : n))
     );
+    
+    // Save changes to file system
+    const folders = JSON.parse(localStorage.getItem('folders') || '[]');
+    const folder = folders.find((f: any) => f.id === note.folderId);
+    
+    if (folder) {
+      await fileSystemService.saveNoteToFile(folder.path, note);
+    }
   };
 
   const deleteNote = (id: string) => {
@@ -40,9 +74,9 @@ export const useNoteOperations = () => {
   };
 
   const updateNoteContent = useCallback(
-    (contentOrUpdater: string | ((prevContent: string) => string)) => {
-      setNotes((prevNotes) =>
-        prevNotes.map((note) => {
+    async (contentOrUpdater: string | ((prevContent: string) => string)) => {
+      setNotes((prevNotes) => {
+        const updatedNotes = prevNotes.map((note) => {
           if (note.id === currentNoteId) {
             const newContent = typeof contentOrUpdater === 'function'
               ? contentOrUpdater(note.content)
@@ -50,8 +84,28 @@ export const useNoteOperations = () => {
             return { ...note, content: newContent, updatedAt: new Date() };
           }
           return note;
-        })
-      );
+        });
+
+        // Get the updated note and save to file
+        const currentNote = updatedNotes.find(note => note.id === currentNoteId);
+        if (currentNote) {
+          const folders = JSON.parse(localStorage.getItem('folders') || '[]');
+          const folder = folders.find((f: any) => f.id === currentNote.folderId);
+          
+          if (folder) {
+            // Use a debounced save to avoid too many file writes
+            if (window.saveTimeout) {
+              clearTimeout(window.saveTimeout);
+            }
+            
+            window.saveTimeout = setTimeout(() => {
+              fileSystemService.saveNoteToFile(folder.path, currentNote);
+            }, 1000);
+          }
+        }
+        
+        return updatedNotes;
+      });
     },
     [currentNoteId, setNotes]
   );
@@ -76,7 +130,7 @@ export const useNoteOperations = () => {
 
   return {
     notes,
-    setNotes, // Expose setNotes so it can be passed to other hooks
+    setNotes,
     currentNoteId,
     setCurrentNoteId,
     createNote,

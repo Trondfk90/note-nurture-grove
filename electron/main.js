@@ -1,7 +1,8 @@
-
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
+const dialog = require('electron').dialog;
+const fs = require('fs').promises;
 
 let mainWindow;
 
@@ -81,4 +82,36 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Add file system related IPC handlers
+ipcMain.handle('dialog:openDirectory', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    properties: ['openDirectory', 'createDirectory']
+  });
+  if (canceled) {
+    return null;
+  } else {
+    return filePaths[0];
+  }
+});
+
+ipcMain.handle('file:writeFile', async (event, path, content) => {
+  try {
+    await fs.promises.writeFile(path, content, 'utf8');
+    return { success: true, path };
+  } catch (error) {
+    console.error('Failed to write file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('file:readFile', async (event, path) => {
+  try {
+    const content = await fs.promises.readFile(path, 'utf8');
+    return { success: true, content };
+  } catch (error) {
+    console.error('Failed to read file:', error);
+    return { success: false, error: error.message };
+  }
 });
