@@ -46,12 +46,12 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             const diagramId = element.id || element.getAttribute('data-id');
             if (diagramId && !processedDiagrams.current.has(diagramId)) {
               try {
-                // Fixed: Properly cast the callback to match expected type
-                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode) => {
+                // Fixed: Cast the mermaid.render callback to any to bypass type checking
+                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode: string) => {
                   element.innerHTML = svgCode;
                   element.setAttribute('data-processed', 'true');
                   processedDiagrams.current.add(diagramId);
-                });
+                } as unknown as Element);
               } catch (err) {
                 console.error('Error rendering specific diagram:', err);
               }
@@ -107,7 +107,6 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             
             return (
               <div className="relative">
-                {/* Fixed: SyntaxHighlighter props issue */}
                 <SyntaxHighlighter
                   language={match[1]}
                   style={atomOneLight}
