@@ -26,7 +26,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const {
     notes,
-    setNotes, // Get the setNotes function from useNoteOperations
+    setNotes,
     currentNoteId,
     setCurrentNoteId,
     createNote,
@@ -44,12 +44,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteTag,
     addTag,
     removeTag,
-    addTagToNote,
-    removeTagFromNote,
+    addTagToNote: baseAddTagToNote,
+    removeTagFromNote: baseRemoveTagFromNote,
     removeTagFromAllNotes
   } = useTagOperations();
   
-  // Pass setNotes to useAttachmentOperations
+  // Pass notes and setNotes to useAttachmentOperations
   const {
     addAttachment,
     removeAttachment,
@@ -63,11 +63,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Adapted functions that use notes and setNotes directly
   const adaptedAddTagToNote = (noteId: string, tagName: string) => {
-    addTagToNote(noteId, tagName, notes, setNotes);
+    baseAddTagToNote(noteId, tagName, notes, setNotes);
   };
 
   const adaptedRemoveTagFromNote = (noteId: string, tagName: string) => {
-    removeTagFromNote(noteId, tagName, notes, setNotes);
+    baseRemoveTagFromNote(noteId, tagName, notes, setNotes);
   };
 
   // Derived states
