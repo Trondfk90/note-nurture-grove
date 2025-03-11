@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -6,7 +7,7 @@ import React, {
   useCallback,
 } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Note, Folder, Tag, Attachment } from '@/types';
+import { Note, Folder, Tag, Attachment, ViewMode } from '@/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 
 export interface AppContextType {
@@ -14,36 +15,38 @@ export interface AppContextType {
   notes: Note[];
   tags: Tag[];
   currentFolder: Folder | null;
-  currentNote: string | null;
+  currentNote: Note | null;
   searchQuery: string;
   isEditing: boolean;
-  viewMode: 'edit' | 'preview' | 'split';
+  viewMode: ViewMode;
   showAIPanel: boolean;
   createFolder: (name: string, path: string) => void;
-  updateFolder: (id: string, updates: Partial<Folder>) => void;
+  updateFolder: (folder: Folder) => void;
   deleteFolder: (id: string) => void;
-  createNote: (folderId: string, title: string) => void;
-  updateNote: (id: string, updates: Partial<Note>) => void;
+  createNote: (folderId: string, title: string, content?: string) => void;
+  updateNote: (note: Note) => void;
   deleteNote: (id: string) => void;
   setCurrentFolder: (folderId: string) => void;
   setCurrentNote: (noteId: string | null) => void;
   setSearchQuery: (query: string) => void;
   updateNoteContent: (
-    contentOrUpdater:
-      | string
-      | ((prevContent: string) => string)
+    contentOrUpdater: string | ((prevContent: string) => string)
   ) => void;
   setIsEditing: (isEditing: boolean) => void;
-  setViewMode: (mode: 'edit' | 'preview' | 'split') => void;
-  createTag: (name: string, color: string, displayName?: string) => void;
-  updateTag: (id: string, updates: Partial<Tag>) => void;
+  setViewMode: (mode: ViewMode) => void;
+  createTag: (name: string, color: string) => void;
+  updateTag: (id: string, name: string, color: string) => void;
   deleteTag: (id: string) => void;
   addTagToNote: (noteId: string, tagName: string) => void;
   removeTagFromNote: (noteId: string, tagName: string) => void;
   setShowAIPanel: (show: boolean) => void;
   toggleFavorite: (noteId: string) => void;
-  addAttachment: (noteId: string, file: File) => Promise<void>;
+  addAttachment: (noteId: string, file: File) => Promise<Attachment>;
   removeAttachment: (noteId: string, attachmentId: string) => void;
+  deleteAttachment: (noteId: string, attachmentId: string) => void;
+  addTag: (name: string, color: string) => void;
+  removeTag: (id: string) => void;
+  moveNote: (noteId: string, targetFolderId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -52,105 +55,129 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [folders, setFolders] = useLocalStorage<Folder[]>('folders', []);
   const [notes, setNotes] = useLocalStorage<Note[]>('notes', []);
   const [tags, setTags] = useLocalStorage<Tag[]>('tags', []);
-  const [currentFolder, setCurrentFolder] = useState<Folder | null>(
-    folders.length > 0 ? folders[0] : null
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(
+    folders.length > 0 ? folders[0].id : null
   );
-  const [currentNote, setCurrentNote] = useState<string | null>(
+  const [currentNoteId, setCurrentNoteId] = useState<string | null>(
     notes.length > 0 ? notes[0].id : null
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditing, setIsEditing] = useState(true);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>('edit');
+  const [viewMode, setViewMode] = useState<ViewMode>('edit');
   const [showAIPanel, setShowAIPanel] = useState(false);
 
-  useEffect(() => {
-    if (folders.length > 0) {
-      setCurrentFolder(folders[0]);
-    }
-  }, [folders]);
+  // Derived states
+  const currentFolder = currentFolderId 
+    ? folders.find(folder => folder.id === currentFolderId) || null
+    : null;
+  
+  const currentNote = currentNoteId
+    ? notes.find(note => note.id === currentNoteId) || null
+    : null;
 
   useEffect(() => {
-    if (notes.length > 0) {
-      setCurrentNote(notes[0].id);
+    if (folders.length > 0 && !currentFolderId) {
+      setCurrentFolderId(folders[0].id);
     }
-  }, [notes]);
+  }, [folders, currentFolderId]);
+
+  useEffect(() => {
+    if (notes.length > 0 && !currentNoteId) {
+      setCurrentNoteId(notes[0].id);
+    }
+  }, [notes, currentNoteId]);
 
   const createFolder = (name: string, path: string) => {
-    const newFolder: Folder = { id: uuidv4(), name, path };
+    const newFolder: Folder = { 
+      id: uuidv4(), 
+      name, 
+      path, 
+      notes: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     setFolders((prevFolders) => [...prevFolders, newFolder]);
-    setCurrentFolder(newFolder);
+    setCurrentFolderId(newFolder.id);
   };
 
-  const updateFolder = (id: string, updates: Partial<Folder>) => {
+  const updateFolder = (folder: Folder) => {
     setFolders((prevFolders) =>
-      prevFolders.map((folder) => (folder.id === id ? { ...folder, ...updates } : folder))
+      prevFolders.map((f) => (f.id === folder.id ? { ...f, ...folder, updatedAt: new Date() } : f))
     );
   };
 
   const deleteFolder = (id: string) => {
     setFolders((prevFolders) => prevFolders.filter((folder) => folder.id !== id));
     setNotes((prevNotes) => prevNotes.filter((note) => note.folderId !== id));
-    if (currentFolder?.id === id) {
-      setCurrentFolder(folders.length > 1 ? folders[0] : null);
+    if (currentFolderId === id) {
+      setCurrentFolderId(folders.length > 1 ? folders.find(f => f.id !== id)?.id || null : null);
     }
   };
 
-  const createNote = (folderId: string, title: string) => {
+  const createNote = (folderId: string, title: string, content: string = '') => {
     const newNote: Note = {
       id: uuidv4(),
       folderId,
       title,
-      content: '',
+      content,
       favorite: false,
       tags: [],
       attachments: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     setNotes((prevNotes) => [...prevNotes, newNote]);
-    setCurrentNote(newNote.id);
+    setCurrentNoteId(newNote.id);
   };
 
-  const updateNote = (id: string, updates: Partial<Note>) => {
+  const updateNote = (note: Note) => {
     setNotes((prevNotes) =>
-      prevNotes.map((note) => (note.id === id ? { ...note, ...updates } : note))
+      prevNotes.map((n) => (n.id === note.id ? { ...n, ...note, updatedAt: new Date() } : n))
     );
   };
 
   const deleteNote = (id: string) => {
     setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
-    if (currentNote === id) {
-      setCurrentNote(notes.length > 1 ? notes[0].id : null);
+    if (currentNoteId === id) {
+      setCurrentNoteId(notes.length > 1 ? notes.find(n => n.id !== id)?.id || null : null);
     }
   };
 
   const updateNoteContent = useCallback(
     (
-      contentOrUpdater:
-        | string
-        | ((prevContent: string) => string)
+      contentOrUpdater: string | ((prevContent: string) => string)
     ) => {
       setNotes((prevNotes) =>
         prevNotes.map((note) => {
-          if (note.id === currentNote) {
+          if (note.id === currentNoteId) {
             const newContent = typeof contentOrUpdater === 'function'
               ? contentOrUpdater(note.content)
               : contentOrUpdater;
-            return { ...note, content: newContent };
+            return { ...note, content: newContent, updatedAt: new Date() };
           }
           return note;
         })
       );
     },
-    [currentNote, setNotes]
+    [currentNoteId, setNotes]
   );
 
-  const createTag = (name: string, color: string, displayName?: string) => {
-    const newTag: Tag = { id: uuidv4(), name, color, displayName };
+  const createTag = (name: string, color: string) => {
+    const newTag: Tag = { 
+      id: uuidv4(), 
+      name, 
+      color, 
+      displayName: name 
+    };
     setTags((prevTags) => [...prevTags, newTag]);
   };
 
-  const updateTag = (id: string, updates: Partial<Tag>) => {
+  // Alias for compatibility
+  const addTag = createTag;
+
+  const updateTag = (id: string, name: string, color: string) => {
     setTags((prevTags) =>
-      prevTags.map((tag) => (tag.id === id ? { ...tag, ...updates } : tag))
+      prevTags.map((tag) => (tag.id === id ? { ...tag, name, color, displayName: name } : tag))
     );
   };
 
@@ -168,11 +195,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // Alias for compatibility
+  const removeTag = deleteTag;
+
   const addTagToNote = (noteId: string, tagName: string) => {
     setNotes((prevNotes) =>
       prevNotes.map((note) =>
         note.id === noteId && !note.tags.includes(tagName)
-          ? { ...note, tags: [...note.tags, tagName] }
+          ? { ...note, tags: [...note.tags, tagName], updatedAt: new Date() }
           : note
       )
     );
@@ -182,7 +212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotes((prevNotes) =>
       prevNotes.map((note) =>
         note.id === noteId
-          ? { ...note, tags: note.tags.filter((tag) => tag !== tagName) }
+          ? { ...note, tags: note.tags.filter((tag) => tag !== tagName), updatedAt: new Date() }
           : note
       )
     );
@@ -191,36 +221,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleFavorite = (noteId: string) => {
     setNotes((prevNotes) =>
       prevNotes.map((note) =>
-        note.id === noteId ? { ...note, favorite: !note.favorite } : note
+        note.id === noteId ? { ...note, favorite: !note.favorite, updatedAt: new Date() } : note
       )
     );
   };
 
-  const addAttachment = async (noteId: string, file: File) => {
+  const addAttachment = async (noteId: string, file: File): Promise<Attachment> => {
     try {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      await new Promise((resolve, reject) => {
-        reader.onload = () => resolve(reader.result);
+      
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
         reader.onerror = (error) => reject(error);
       });
-      const dataUrl = reader.result as string;
 
       const newAttachment: Attachment = {
         id: uuidv4(),
         name: file.name,
         type: file.type,
-        size: file.size,
-        dataUrl: dataUrl,
+        url: dataUrl,
+        noteId: noteId,
+        createdAt: new Date(),
+        size: file.size
       };
 
       setNotes((prevNotes) =>
         prevNotes.map((note) =>
           note.id === noteId
-            ? { ...note, attachments: [...note.attachments, newAttachment] }
+            ? { 
+                ...note, 
+                attachments: [...(note.attachments || []), newAttachment],
+                updatedAt: new Date()
+              }
             : note
         )
       );
+      
+      return newAttachment;
     } catch (error) {
       console.error("Error adding attachment:", error);
       throw error;
@@ -232,12 +270,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prevNotes.map((note) =>
         note.id === noteId
           ? {
-            ...note,
-            attachments: note.attachments.filter((att) => att.id !== attachmentId),
-          }
+              ...note,
+              attachments: (note.attachments || []).filter((att) => att.id !== attachmentId),
+              updatedAt: new Date()
+            }
           : note
       )
     );
+  };
+
+  // Alias for compatibility
+  const deleteAttachment = removeAttachment;
+
+  const moveNote = (noteId: string, targetFolderId: string) => {
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId
+          ? { ...note, folderId: targetFolderId, updatedAt: new Date() }
+          : note
+      )
+    );
+  };
+
+  const setCurrentFolder = (folderId: string) => {
+    setCurrentFolderId(folderId);
+  };
+
+  const setCurrentNote = (noteId: string | null) => {
+    setCurrentNoteId(noteId);
   };
 
   const contextValue: AppContextType = {
@@ -271,6 +331,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toggleFavorite,
     addAttachment,
     removeAttachment,
+    deleteAttachment,
+    addTag,
+    removeTag,
+    moveNote
   };
 
   return (

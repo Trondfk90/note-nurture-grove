@@ -144,7 +144,7 @@ const NoteEditor: React.FC = () => {
     }
   }, [searchQuery]);
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     if (!currentNote || !isEditing) return;
     
     const clipboardItems = e.clipboardData.items;
@@ -161,8 +161,9 @@ const NoteEditor: React.FC = () => {
         const fileName = `pasted-image-${timestamp}.png`;
         const file = new File([blob], fileName, { type: 'image/png' });
         
-        addAttachment(currentNote.id, file).then((attachment) => {
-          const markdownImg = `![${attachment.name}](@attachment/${attachment.id})`;
+        try {
+          const attachment = await addAttachment(currentNote.id, file);
+          const markdownImg = `![${attachment.name}](attachment:${attachment.id})`;
           
           if (textareaRef.current) {
             const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
@@ -184,7 +185,9 @@ const NoteEditor: React.FC = () => {
               }, 0);
             }
           }
-        });
+        } catch (err) {
+          console.error('Error handling pasted image:', err);
+        }
         
         hasHandledImage = true;
         break;
@@ -194,17 +197,18 @@ const NoteEditor: React.FC = () => {
     return !hasHandledImage;
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentNote || !e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    addAttachment(currentNote.id, file).then((attachment) => {
-      let markdownRef;
+    try {
+      const attachment = await addAttachment(currentNote.id, file);
       
+      let markdownRef;
       if (file.type.startsWith('image/')) {
-        markdownRef = `![${attachment.name}](@attachment/${attachment.id})`;
+        markdownRef = `![${attachment.name}](attachment:${attachment.id})`;
       } else {
-        markdownRef = `[${attachment.name}](@attachment/${attachment.id})`;
+        markdownRef = `[${attachment.name}](attachment:${attachment.id})`;
       }
       
       const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
@@ -225,7 +229,9 @@ const NoteEditor: React.FC = () => {
           );
         }, 0);
       }
-    });
+    } catch (err) {
+      console.error('Error uploading file:', err);
+    }
     
     e.target.value = '';
   };
@@ -235,9 +241,9 @@ const NoteEditor: React.FC = () => {
     
     let markdownRef;
     if (attachment.type.startsWith('image/')) {
-      markdownRef = `![${attachment.name}](@attachment/${attachment.id})`;
+      markdownRef = `![${attachment.name}](attachment:${attachment.id})`;
     } else {
-      markdownRef = `[${attachment.name}](@attachment/${attachment.id})`;
+      markdownRef = `[${attachment.name}](attachment:${attachment.id})`;
     }
     
     const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;

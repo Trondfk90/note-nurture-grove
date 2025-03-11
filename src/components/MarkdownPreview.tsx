@@ -46,7 +46,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             const diagramId = element.id || element.getAttribute('data-id');
             if (diagramId && !processedDiagrams.current.has(diagramId)) {
               try {
-                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode) => {
+                mermaid.render(`mermaid-svg-${diagramId}`, element.textContent || '', (svgCode: string) => {
                   element.innerHTML = svgCode;
                   element.setAttribute('data-processed', 'true');
                   processedDiagrams.current.add(diagramId);
@@ -96,15 +96,19 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
           // Define custom components for the markdown
-          code({ node, inline, className, children, ...props }) {
+          code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             const codeContent = String(children).replace(/\n$/, '');
             
-            return !inline && match ? (
+            if (!match) {
+              return <code className={className} {...props}>{children}</code>;
+            }
+            
+            return (
               <div className="relative">
                 <SyntaxHighlighter
                   language={match[1]}
-                  style={atomOneLight}
+                  style={atomOneLight as any}
                   PreTag="div"
                   {...props}
                 >
@@ -112,10 +116,6 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
                 </SyntaxHighlighter>
                 <CopyButton content={codeContent} />
               </div>
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
             );
           },
           // Add unique IDs to mermaid diagrams
@@ -147,8 +147,8 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
               const attachmentId = src.replace('attachment:', '');
               const attachment = attachments.find(a => a.id === attachmentId);
               
-              if (attachment && attachment.dataUrl) {
-                return <img src={attachment.dataUrl} alt={alt || 'attachment'} {...props} />;
+              if (attachment && attachment.url) {
+                return <img src={attachment.url} alt={alt || 'attachment'} {...props} />;
               }
             }
             

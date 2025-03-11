@@ -27,14 +27,14 @@ export interface Attachment {
   url: string;
   noteId: string;
   createdAt: Date;
-  size?: number; // Added size property as optional
+  size?: number;
 }
 
 export interface Tag {
   id: string;
   name: string;
   color: string;
-  displayName: string; // Added displayName for case-sensitive display
+  displayName: string;
 }
 
 export type ViewMode = 'edit' | 'preview' | 'split';

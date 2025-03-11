@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppContext } from '@/store/appContext';
 import { 
@@ -22,7 +23,7 @@ interface ManageTagsProps {
 }
 
 const ManageTags: React.FC<ManageTagsProps> = ({ open, onOpenChange }) => {
-  const { tags, addTag, updateTag, removeTag } = useAppContext();
+  const { tags, createTag, updateTag, deleteTag } = useAppContext();
   
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [deleteTagId, setDeleteTagId] = useState<string | null>(null);
@@ -58,14 +59,14 @@ const ManageTags: React.FC<ManageTagsProps> = ({ open, onOpenChange }) => {
 
   const confirmDelete = () => {
     if (deleteTagId) {
-      removeTag(deleteTagId);
+      deleteTag(deleteTagId);
       setDeleteTagId(null);
     }
   };
 
   const handleAddTag = () => {
     if (newTagName.trim()) {
-      addTag(newTagName, newTagColor);
+      createTag(newTagName, newTagColor);
       setNewTagName('');
       setNewTagColor('#4CAF50');
     }

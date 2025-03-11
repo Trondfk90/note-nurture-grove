@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Note, Folder } from '@/types';
 
 const FolderList: React.FC = () => {
   const {
@@ -83,8 +84,7 @@ const FolderList: React.FC = () => {
       if (folder) {
         updateFolder({ 
           ...folder, 
-          name: renameFolderValue,
-          updatedAt: new Date() 
+          name: renameFolderValue 
         });
         toast({
           title: "Folder renamed",
@@ -96,7 +96,7 @@ const FolderList: React.FC = () => {
   };
 
   const handleRenameNote = (noteId: string) => {
-    const note = currentFolder?.notes.find(n => n.id === noteId);
+    const note = notes.find(n => n.id === noteId);
     if (note) {
       setRenamingNote(noteId);
       setRenameNoteValue(note.title);
@@ -105,12 +105,11 @@ const FolderList: React.FC = () => {
 
   const handleSaveRenameNote = (noteId: string) => {
     if (renameNoteValue.trim()) {
-      const note = currentFolder?.notes.find(n => n.id === noteId);
+      const note = notes.find(n => n.id === noteId);
       if (note) {
         updateNote({ 
           ...note, 
-          title: renameNoteValue,
-          updatedAt: new Date() 
+          title: renameNoteValue
         });
         toast({
           title: "Note renamed",
