@@ -1,7 +1,7 @@
 
 # TFK Notes - Markdown Note Editor
 
-A beautiful markdown note editor with support for GitHub Flavored Markdown, KaTeX, and Mermaid diagrams.
+A beautiful markdown note editor with support for GitHub Flavored Markdown, KaTeX, and Mermaid diagrams. Available as a web application and a desktop application.
 
 ## Project info
 
@@ -39,6 +39,21 @@ npm i
 npm run dev
 ```
 
+## Running as a desktop application
+
+To run the application as a desktop application, follow these steps:
+
+```sh
+# Install dependencies
+npm i
+
+# Run the Electron app in development mode
+npm run electron:dev
+
+# Build the Electron app for production
+npm run electron:build
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).
@@ -62,10 +77,13 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Electron (for desktop app)
 
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/5dc07766-1910-458f-9d87-dfc64e970581) and click on Share -> Publish.
+
+For the desktop application, run `npm run electron:build` to create installable packages for Windows, macOS, and Linux.
 
 ## I want to use a custom domain - is that possible?
 

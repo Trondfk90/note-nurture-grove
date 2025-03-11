@@ -45,7 +45,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
     "date-fns": "^3.6.0",
+    "electron": "^35.0.1",
+    "electron-builder": "^25.1.8",
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
     "katex": "^0.16.21",
@@ -71,6 +75,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^0.9.3",
+    "wait-on": "^8.0.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
