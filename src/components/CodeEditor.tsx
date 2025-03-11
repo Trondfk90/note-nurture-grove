@@ -2,6 +2,12 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
+import LineNumbers from './code-editor/LineNumbers';
+import SearchHighlights from './code-editor/SearchHighlights';
+import CursorPosition from './code-editor/CursorPosition';
+import { useScrollSync } from './code-editor/useScrollSync';
+import { useSearchHighlights } from './code-editor/useSearchHighlights';
+import { useCursorPosition } from './code-editor/useCursorPosition';
 
 interface CodeEditorProps {
   value: string;
@@ -28,37 +34,20 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
 }, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const [lineCount, setLineCount] = useState(1);
-  const [cursorLine, setCursorLine] = useState(1);
-  const [cursorColumn, setCursorColumn] = useState(1);
+  const highlightsRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
-  const [searchMatches, setSearchMatches] = useState<{start: number, end: number}[]>([]);
+  const [lineCount, setLineCount] = useState(1);
   
-  // Function to find all search matches
-  useEffect(() => {
-    if (searchQuery && searchQuery.trim() !== '' && highlightSearchMatches) {
-      const matches: {start: number, end: number}[] = [];
-      const query = searchQuery.toLowerCase();
-      const content = value.toLowerCase();
-      let index = 0;
-      
-      while (index < content.length) {
-        const foundIndex = content.indexOf(query, index);
-        if (foundIndex === -1) break;
-        
-        matches.push({
-          start: foundIndex,
-          end: foundIndex + query.length
-        });
-        
-        index = foundIndex + query.length;
-      }
-      
-      setSearchMatches(matches);
-    } else {
-      setSearchMatches([]);
-    }
-  }, [searchQuery, value, highlightSearchMatches]);
+  const { cursorLine, cursorColumn, handleSelect } = useCursorPosition({ value });
+  const { searchMatches } = useSearchHighlights({ value, searchQuery, highlightSearchMatches });
+  
+  // Set up scroll synchronization
+  useScrollSync({ 
+    textareaRef, 
+    lineNumbersRef, 
+    highlightsRef, 
+    editorContainerRef 
+  });
 
   // Expose methods to parent components
   useImperativeHandle(ref, () => ({
@@ -79,8 +68,9 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       textareaRef.current.scrollTop = (targetLine - 5) * lineHeight;
       
       // Update cursor position to highlight the line
-      setCursorLine(targetLine);
-      setCursorColumn(linesBeforePosition[linesBeforePosition.length - 1].length + 1);
+      const linesBeforeCursor = textBeforePosition.split('\n');
+      const cursorLine = linesBeforeCursor.length;
+      const cursorColumn = linesBeforeCursor[linesBeforeCursor.length - 1].length + 1;
     }
   }));
 
@@ -94,64 +84,11 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
     setLineCount(lines);
   };
 
-  // Update cursor position
-  const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
-    const target = e.target as HTMLTextAreaElement;
-    const cursorPosition = target.selectionStart;
-    
-    const textBeforeCursor = value.substring(0, cursorPosition);
-    const linesBeforeCursor = textBeforeCursor.split('\n');
-    
-    setCursorLine(linesBeforeCursor.length);
-    setCursorColumn(linesBeforeCursor[linesBeforeCursor.length - 1].length + 1);
-  };
-
-  // Handle scroll synchronization
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    const lineNumbers = lineNumbersRef.current;
-    
-    if (!textarea || !lineNumbers) return;
-    
-    // Function to sync line numbers scroll with textarea scroll
-    const syncScroll = () => {
-      lineNumbers.scrollTop = textarea.scrollTop;
-    };
-    
-    // Handle all events that might cause scrolling
-    textarea.addEventListener('scroll', syncScroll, { passive: true });
-    textarea.addEventListener('mousewheel', syncScroll, { passive: true });
-    textarea.addEventListener('DOMMouseScroll', syncScroll, { passive: true }); // Firefox
-    
-    // Also add wheel event to the container to catch all scroll events
-    const container = editorContainerRef.current;
-    if (container) {
-      container.addEventListener('wheel', () => {
-        requestAnimationFrame(syncScroll);
-      }, { passive: true });
-    }
-    
-    // Initial sync
-    syncScroll();
-    
-    return () => {
-      textarea.removeEventListener('scroll', syncScroll);
-      textarea.removeEventListener('mousewheel', syncScroll);
-      textarea.removeEventListener('DOMMouseScroll', syncScroll);
-      if (container) {
-        container.removeEventListener('wheel', syncScroll);
-      }
-    };
-  }, []);
-
   // Initial line count
   useEffect(() => {
     const lines = value.split('\n').length;
     setLineCount(lines);
   }, [value]);
-
-  // Create line numbers array
-  const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
   // Function to create a textarea with highlighted search matches
   const renderTextAreaWithHighlights = () => {
@@ -187,31 +124,11 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
           disabled={disabled}
         />
         <div 
-          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent"
+          ref={highlightsRef}
+          className="absolute top-0 left-0 w-full h-full font-mono text-sm p-2 pointer-events-none whitespace-pre-wrap break-words leading-[1.675rem] text-transparent overflow-auto"
           style={{ zIndex: 1 }}
         >
-          {searchMatches.map((match, idx) => {
-            const beforeMatch = value.substring(0, match.start);
-            const matchText = value.substring(match.start, match.end);
-            
-            // Calculate position for the highlight
-            const matchLines = beforeMatch.split('\n');
-            const lastLine = matchLines[matchLines.length - 1];
-            
-            return (
-              <span 
-                key={idx}
-                className="absolute bg-yellow-200 rounded-sm" 
-                style={{
-                  top: `calc(1.675rem * ${matchLines.length - 1})`,
-                  left: `calc(${lastLine.length} * 0.6125rem + 0.5rem)`,
-                  height: '1.675rem',
-                  width: `calc(${matchText.length} * 0.6125rem)`,
-                  opacity: 0.5
-                }}
-              />
-            );
-          })}
+          <SearchHighlights value={value} searchMatches={searchMatches} />
         </div>
       </div>
     );
@@ -223,37 +140,17 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
       className={cn("editor-container relative font-mono flex", className)}
       style={{ position: 'relative' }}
     >
-      <div 
-        ref={lineNumbersRef}
-        className="line-numbers bg-muted/70 text-muted-foreground p-2 text-right pr-3 overflow-hidden select-none"
-        style={{ 
-          width: '3rem',
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: 0,
-          overflowY: 'hidden',
-          zIndex: 10
-        }}
-      >
-        {lineNumbers.map((num) => (
-          <div 
-            key={num} 
-            className={cn(
-              "text-xs leading-[1.675rem]", 
-              cursorLine === num && "bg-primary/20 text-primary font-medium"
-            )}
-          >
-            {num}
-          </div>
-        ))}
-      </div>
+      <LineNumbers 
+        lineCount={lineCount} 
+        cursorLine={cursorLine} 
+        scrollTop={textareaRef.current?.scrollTop || 0}
+      />
+      
       <div className="flex-1" style={{ marginLeft: '3rem' }}>
         {renderTextAreaWithHighlights()}
       </div>
-      <div className="absolute bottom-2 right-2 bg-muted px-2 py-0.5 text-xs rounded text-muted-foreground">
-        Line {cursorLine}, Column {cursorColumn}
-      </div>
+      
+      <CursorPosition cursorLine={cursorLine} cursorColumn={cursorColumn} />
     </div>
   );
 });
