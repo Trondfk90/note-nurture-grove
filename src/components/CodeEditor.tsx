@@ -8,6 +8,7 @@ import CursorPosition from './code-editor/CursorPosition';
 import { useScrollSync } from './code-editor/useScrollSync';
 import { useSearchHighlights } from './code-editor/useSearchHighlights';
 import { useCursorPosition } from './code-editor/useCursorPosition';
+import { useAppContext } from '@/store/appContext';
 
 interface CodeEditorProps {
   value: string;
@@ -37,6 +38,10 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   const highlightsRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
+  const { viewMode } = useAppContext();
+  
+  // In edit mode, we don't want to show search highlights
+  const showHighlights = viewMode !== 'edit';
   
   const { cursorLine, cursorColumn, handleSelect } = useCursorPosition({ value });
   const { searchMatches } = useSearchHighlights({ value, searchQuery, highlightSearchMatches });
@@ -113,7 +118,11 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
           style={{ zIndex: 1 }}
         >
           {highlightSearchMatches && searchMatches.length > 0 && (
-            <SearchHighlights value={value} searchMatches={searchMatches} />
+            <SearchHighlights 
+              value={value} 
+              searchMatches={searchMatches} 
+              showHighlights={showHighlights}
+            />
           )}
         </div>
       </div>

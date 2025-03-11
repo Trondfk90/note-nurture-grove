@@ -1,13 +1,22 @@
 
 import React from 'react';
+import { useAppContext } from '@/store/appContext';
 
 interface SearchHighlightsProps {
   value: string;
   searchMatches: {start: number, end: number}[];
   scrollContainer?: HTMLElement | null;
+  showHighlights?: boolean;
 }
 
-const SearchHighlights: React.FC<SearchHighlightsProps> = ({ value, searchMatches, scrollContainer }) => {
+const SearchHighlights: React.FC<SearchHighlightsProps> = ({ 
+  value, 
+  searchMatches, 
+  scrollContainer,
+  showHighlights = true
+}) => {
+  if (!showHighlights) return null;
+  
   return (
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
       {searchMatches.map((match, idx) => {
