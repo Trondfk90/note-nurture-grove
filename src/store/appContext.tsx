@@ -95,20 +95,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // When a tag is deleted, remove it from all notes
   useEffect(() => {
-    const handleTagDelete = (tagId: string) => {
+    const handleTagDeletion = (tagId: string) => {
       removeTagFromAllNotes(tagId, notes, setNotes, tags);
     };
 
-    const originalDeleteTag = deleteTag;
-    // Override the deleteTag function to also remove the tag from all notes
-    (deleteTag as any) = (id: string) => {
-      handleTagDelete(id);
-      originalDeleteTag(id);
+    // Subscribe to tag deletions
+    const wrappedDeleteTag = (id: string) => {
+      handleTagDeletion(id);
+      deleteTag(id);
     };
 
     return () => {
-      // Restore the original function when the component unmounts
-      (deleteTag as any) = originalDeleteTag;
+      // No cleanup needed here as we're not overriding the original function
     };
   }, [deleteTag, notes, setNotes, tags, removeTagFromAllNotes]);
 
