@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Note, Attachment } from '@/types';
 import { useLocalStorage } from '@/hooks/use-local-storage';
@@ -12,6 +11,7 @@ export const useNoteOperations = () => {
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(
     notes.length > 0 ? notes[0].id : null
   );
+  const saveTimeoutRef = useRef<number | null>(null);
   
   const createNote = async (folderId: string, title: string, content: string = '') => {
     const folder = JSON.parse(localStorage.getItem('folders') || '[]')
@@ -41,7 +41,6 @@ export const useNoteOperations = () => {
     setNotes((prevNotes) => [...prevNotes, newNote]);
     setCurrentNoteId(newNote.id);
 
-    // Save to file system if we're in Electron
     const saveResult = await fileSystemService.saveNoteToFile(folder.path, newNote);
     
     if (saveResult) {
@@ -57,7 +56,6 @@ export const useNoteOperations = () => {
       prevNotes.map((n) => (n.id === note.id ? { ...n, ...note, updatedAt: new Date() } : n))
     );
     
-    // Save changes to file system
     const folders = JSON.parse(localStorage.getItem('folders') || '[]');
     const folder = folders.find((f: any) => f.id === note.folderId);
     
@@ -86,19 +84,17 @@ export const useNoteOperations = () => {
           return note;
         });
 
-        // Get the updated note and save to file
         const currentNote = updatedNotes.find(note => note.id === currentNoteId);
         if (currentNote) {
           const folders = JSON.parse(localStorage.getItem('folders') || '[]');
           const folder = folders.find((f: any) => f.id === currentNote.folderId);
           
           if (folder) {
-            // Use a debounced save to avoid too many file writes
-            if (window.saveTimeout) {
-              clearTimeout(window.saveTimeout);
+            if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
             }
             
-            window.saveTimeout = setTimeout(() => {
+            saveTimeoutRef.current = window.setTimeout(() => {
               fileSystemService.saveNoteToFile(folder.path, currentNote);
             }, 1000);
           }
