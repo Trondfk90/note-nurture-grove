@@ -93,7 +93,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
                   className="w-full h-full min-h-[calc(100vh-280px)]"
                   placeholder="Write your note in Markdown... (Paste images directly into the editor)"
                   disabled={!isEditing}
-                  highlightSearchMatches={searchQuery.length > 0}
+                  highlightSearchMatches={false}
                   searchQuery={searchQuery}
                 />
               </div>

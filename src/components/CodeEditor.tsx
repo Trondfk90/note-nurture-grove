@@ -40,8 +40,8 @@ const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>(({
   const [lineCount, setLineCount] = useState(1);
   const { viewMode } = useAppContext();
   
-  // In edit mode, we don't want to show search highlights
-  const showHighlights = viewMode !== 'edit';
+  // Only show highlights in preview mode or the right panel of split mode
+  const showHighlights = viewMode === 'preview';
   
   const { cursorLine, cursorColumn, handleSelect } = useCursorPosition({ value });
   const { searchMatches } = useSearchHighlights({ value, searchQuery, highlightSearchMatches });
