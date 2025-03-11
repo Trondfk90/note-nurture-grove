@@ -461,7 +461,6 @@ Add an image or document to this note to see how attachments work in Quillboard.
   favorite: false,
 };
 
-// Let's add some additional notes to make the demo more complete
 const DAILY_JOURNAL_NOTE: Note = {
   id: 'daily-journal-note',
   title: 'Daily Journal Template',
@@ -621,9 +620,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentTags, setCurrentTags] = useState<string[]>([]);
+  const [noteContent, updateNoteContent] = useState<string>('');
 
   useEffect(() => {
-    // Initialize with all demo notes
     const initialNotes = [
       WELCOME_NOTE, 
       MARKDOWN_NOTE, 
@@ -1128,4 +1127,233 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     setFolders((prevFolders) => {
-      return prevFolders.map
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId) {
+            return {
+              ...note,
+              favorite: !note.favorite,
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+
+    if (currentNote?.id === noteId) {
+      setCurrentNoteState((prevNote) => {
+        if (prevNote) {
+          return {
+            ...prevNote,
+            favorite: !prevNote.favorite,
+            updatedAt: new Date(),
+          };
+        }
+        return prevNote;
+      });
+    }
+  };
+
+  const filteredNotes = currentFolder
+    ? currentFolder.notes.filter((note) => {
+        if (!searchQuery) return true;
+        const lowercaseQuery = searchQuery.toLowerCase();
+        return (
+          note.title.toLowerCase().includes(lowercaseQuery) ||
+          note.content.toLowerCase().includes(lowercaseQuery) ||
+          note.tags.some((tag) => tag.toLowerCase().includes(lowercaseQuery))
+        );
+      })
+    : [];
+
+  const addAttachment = async (noteId: string, file: File): Promise<Attachment> => {
+    const url = URL.createObjectURL(file);
+    
+    const newAttachment: Attachment = {
+      id: uuidv4(),
+      name: file.name,
+      type: file.type,
+      url: url,
+      noteId: noteId,
+      createdAt: new Date(),
+      size: file.size,
+    };
+
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.id === noteId) {
+          return {
+            ...note,
+            attachments: [...(note.attachments || []), newAttachment],
+            updatedAt: new Date(),
+          };
+        }
+        return note;
+      });
+    });
+
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId) {
+            return {
+              ...note,
+              attachments: [...(note.attachments || []), newAttachment],
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+
+    if (currentNote?.id === noteId) {
+      setCurrentNoteState((prevNote) => {
+        if (prevNote) {
+          return {
+            ...prevNote,
+            attachments: [...(prevNote.attachments || []), newAttachment],
+            updatedAt: new Date(),
+          };
+        }
+        return prevNote;
+      });
+    }
+
+    toast({
+      title: 'Attachment Added',
+      description: `${file.name} has been attached to the note.`,
+    });
+
+    return newAttachment;
+  };
+
+  const deleteAttachment = (noteId: string, attachmentId: string) => {
+    setNotes((prevNotes) => {
+      return prevNotes.map((note) => {
+        if (note.id === noteId && note.attachments) {
+          return {
+            ...note,
+            attachments: note.attachments.filter((attachment) => attachment.id !== attachmentId),
+            updatedAt: new Date(),
+          };
+        }
+        return note;
+      });
+    });
+
+    setFolders((prevFolders) => {
+      return prevFolders.map((folder) => {
+        const updatedNotes = folder.notes.map((note) => {
+          if (note.id === noteId && note.attachments) {
+            return {
+              ...note,
+              attachments: note.attachments.filter((attachment) => attachment.id !== attachmentId),
+              updatedAt: new Date(),
+            };
+          }
+          return note;
+        });
+
+        return {
+          ...folder,
+          notes: updatedNotes,
+        };
+      });
+    });
+
+    if (currentNote?.id === noteId && currentNote.attachments) {
+      setCurrentNoteState((prevNote) => {
+        if (prevNote && prevNote.attachments) {
+          return {
+            ...prevNote,
+            attachments: prevNote.attachments.filter((attachment) => attachment.id !== attachmentId),
+            updatedAt: new Date(),
+          };
+        }
+        return prevNote;
+      });
+    }
+
+    toast({
+      title: 'Attachment Removed',
+      description: `The attachment has been removed from the note.`,
+    });
+  };
+
+  useEffect(() => {
+    if (currentNote) {
+      updateNoteContent(currentNote.content);
+      setCurrentTags(currentNote.tags);
+    } else {
+      updateNoteContent('');
+      setCurrentTags([]);
+    }
+  }, [currentNote]);
+
+  useEffect(() => {
+    if (currentNote && noteContent !== currentNote.content) {
+      const updatedNote = {
+        ...currentNote,
+        content: noteContent,
+        updatedAt: new Date(),
+      };
+      updateNote(updatedNote);
+    }
+  }, [noteContent]);
+
+  const contextValue: AppContextType = {
+    folders,
+    notes,
+    tags,
+    currentFolder,
+    currentNote,
+    currentTags,
+    viewMode,
+    isEditing,
+    searchQuery,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    createNote,
+    updateNote,
+    deleteNote,
+    moveNote,
+    setCurrentFolder,
+    setCurrentNote,
+    setViewMode,
+    setIsEditing,
+    addTag,
+    updateTag,
+    removeTag,
+    addTagToNote,
+    removeTagFromNote,
+    setSearchQuery,
+    toggleFavorite,
+    filteredNotes,
+    addAttachment,
+    deleteAttachment,
+    updateNoteContent,
+  };
+
+  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+};
+
+export const useAppContext = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
+};
