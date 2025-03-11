@@ -46,15 +46,17 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             const diagramId = element.id || element.getAttribute('data-id');
             if (diagramId && !processedDiagrams.current.has(diagramId)) {
               try {
-                // Fixed: Correct type casting for the callback
+                // Fixed: Correctly placing the type cast
+                const callback = (svgCode: string) => {
+                  element.innerHTML = svgCode;
+                  element.setAttribute('data-processed', 'true');
+                  processedDiagrams.current.add(diagramId);
+                };
+                
                 mermaid.render(
                   `mermaid-svg-${diagramId}`, 
                   element.textContent || '', 
-                  (svgCode) => {
-                    element.innerHTML = svgCode;
-                    element.setAttribute('data-processed', 'true');
-                    processedDiagrams.current.add(diagramId);
-                  } as unknown as Element
+                  callback as unknown as Element
                 );
               } catch (err) {
                 console.error('Error rendering specific diagram:', err);
