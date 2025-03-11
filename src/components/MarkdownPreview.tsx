@@ -46,13 +46,14 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, attachments 
             const diagramId = element.id || element.getAttribute('data-id');
             if (diagramId && !processedDiagrams.current.has(diagramId)) {
               try {
-                // Fixed: Correctly placing the type cast
-                const callback = (svgCode: string) => {
+                // Create a proper callback function first
+                const callback = function(svgCode: string) {
                   element.innerHTML = svgCode;
                   element.setAttribute('data-processed', 'true');
                   processedDiagrams.current.add(diagramId);
                 };
                 
+                // Then use type casting separately when passing to mermaid.render
                 mermaid.render(
                   `mermaid-svg-${diagramId}`, 
                   element.textContent || '', 
