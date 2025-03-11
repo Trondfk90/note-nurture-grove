@@ -27,6 +27,7 @@ export interface Attachment {
   url: string;
   noteId: string;
   createdAt: Date;
+  size?: number; // Added size property as optional
 }
 
 export interface Tag {
