@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -27,14 +27,24 @@ const SearchBar: React.FC<SearchBarProps> = ({
   setShowSearch,
   setSearchResults
 }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   // Handle input change separately to prevent re-rendering issues
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
   
+  // Focus input when search bar is opened
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+  
   return (
     <div className="px-4 py-2 border-b border-border flex items-center gap-2">
       <Input
+        ref={inputRef}
         placeholder="Search in note..."
         value={searchQuery}
         onChange={handleInputChange}

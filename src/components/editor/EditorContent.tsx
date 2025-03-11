@@ -16,6 +16,7 @@ interface EditorContentProps {
   textareaRef: React.RefObject<CodeEditorRef>;
   searchQuery: string;
   searchResults: Array<{index: number, line: number}>;
+  currentSearchIndex: number;
 }
 
 const EditorContent: React.FC<EditorContentProps> = ({
@@ -27,6 +28,7 @@ const EditorContent: React.FC<EditorContentProps> = ({
   textareaRef,
   searchQuery,
   searchResults,
+  currentSearchIndex
 }) => {
   const { viewMode, setViewMode, isEditing } = useAppContext();
 
@@ -71,6 +73,8 @@ const EditorContent: React.FC<EditorContentProps> = ({
               <MarkdownPreview 
                 content={editedContent} 
                 attachments={note.attachments}
+                searchQuery={searchQuery}
+                highlightSearchMatches={searchResults.length > 0}
               />
             </div>
           </ScrollArea>
@@ -99,6 +103,8 @@ const EditorContent: React.FC<EditorContentProps> = ({
                 <MarkdownPreview 
                   content={editedContent} 
                   attachments={note.attachments}
+                  searchQuery={searchQuery}
+                  highlightSearchMatches={searchResults.length > 0}
                 />
               </div>
             </ScrollArea>

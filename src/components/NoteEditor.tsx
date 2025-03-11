@@ -383,6 +383,7 @@ const NoteEditor: React.FC = () => {
         textareaRef={textareaRef}
         searchQuery={searchQuery}
         searchResults={searchResults}
+        currentSearchIndex={currentSearchIndex}
       />
 
       <DeleteNoteDialog
