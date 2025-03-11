@@ -6,14 +6,24 @@ import { useLocalStorage } from '@/hooks/use-local-storage';
 export const useTagOperations = () => {
   const [tags, setTags] = useLocalStorage<Tag[]>('tags', []);
 
-  const createTag = (name: string, color: string) => {
+  const createTag = (name: string, color: string = '#4CAF50') => {
+    // Check if tag with this name already exists
+    const existingTag = tags.find(tag => tag.name === name);
+    
+    if (existingTag) {
+      // Return existing tag to avoid duplicates
+      return existingTag;
+    }
+    
     const newTag: Tag = { 
       id: uuidv4(), 
       name, 
       color, 
       displayName: name 
     };
+    
     setTags((prevTags) => [...prevTags, newTag]);
+    return newTag;
   };
 
   // Alias for compatibility
@@ -38,6 +48,9 @@ export const useTagOperations = () => {
     notesArray: Note[], 
     setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>
   ) => {
+    // First ensure tag exists in the tags collection
+    createTag(tagName);
+    
     setNotesFunction((prevNotes) =>
       prevNotes.map((note) =>
         note.id === noteId && !note.tags.includes(tagName)
@@ -68,13 +81,14 @@ export const useTagOperations = () => {
     setNotesFunction: React.Dispatch<React.SetStateAction<Note[]>>, 
     tagsArray: Tag[]
   ) => {
+    const tagToRemove = tagsArray.find(tag => tag.id === tagId);
+    if (!tagToRemove) return;
+    
     setNotesFunction((prevNotes) =>
       prevNotes.map((note) => ({
         ...note,
-        tags: note.tags.filter((tagName) => {
-          const tag = tagsArray.find((t) => t.name === tagName);
-          return tag?.id !== tagId;
-        }),
+        tags: note.tags.filter((tagName) => tagName !== tagToRemove.name),
+        updatedAt: new Date()
       }))
     );
   };

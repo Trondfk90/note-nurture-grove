@@ -20,7 +20,7 @@ const NoteTags: React.FC<NoteTagsProps> = ({ note }) => {
 
   const handleAddTag = () => {
     if (note && newTagName.trim()) {
-      addTagToNote(note.id, newTagName);
+      addTagToNote(note.id, newTagName.trim());
       setNewTagName('');
       setTagPopoverOpen(false);
     }
