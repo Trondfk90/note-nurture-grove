@@ -17,7 +17,10 @@ export const callAzureAI = async (request: AzureAIRequest): Promise<AzureAIRespo
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  const lastUserMessage = request.messages.findLast(m => m.role === 'user')?.content || '';
+  // Find the last user message without using findLast (for compatibility)
+  const lastUserMessage = request.messages
+    .filter(m => m.role === 'user')
+    .slice(-1)[0]?.content || '';
   
   // Generate different responses based on the operation
   switch (request.operation) {
