@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/store/appContext';
-import { CodeEditorRef } from './CodeEditor';
-import { Note, Attachment } from '@/types';
+import { Note } from '@/types';
 import ManageTags from './ManageTags';
 import NoteHeader from './editor/NoteHeader';
 import SearchBar from './editor/SearchBar';
@@ -9,6 +9,11 @@ import NoteTags from './editor/NoteTags';
 import DeleteNoteDialog from './editor/DeleteNoteDialog';
 import AttachmentsDialog from './editor/AttachmentsDialog';
 import EditorContent from './editor/EditorContent';
+import NewNoteForm from './editor/NewNoteForm';
+import EmptyState from './editor/EmptyState';
+import { useNotePaste } from './editor/useNotePaste';
+import { useFileUpload } from './editor/useFileUpload';
+import { useNoteSearch } from './editor/useNoteSearch';
 
 const NoteEditor: React.FC = () => {
   const {
@@ -16,7 +21,6 @@ const NoteEditor: React.FC = () => {
     updateNote,
     deleteNote,
     isEditing,
-    addAttachment,
     toggleFavorite,
     createNote,
     currentFolder,
@@ -26,16 +30,38 @@ const NoteEditor: React.FC = () => {
   const [editedContent, setEditedContent] = useState('');
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<{index: number, line: number}[]>([]);
-  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const [manageTagsOpen, setManageTagsOpen] = useState(false);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
-  const textareaRef = useRef<CodeEditorRef>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCreatingNewNote, setIsCreatingNewNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
+
+  const { textareaRef, handlePaste } = useNotePaste(
+    currentNote, 
+    isEditing, 
+    editedContent, 
+    setEditedContent, 
+    setUnsavedChanges
+  );
+  
+  const { fileInputRef, handleFileUpload, insertAttachmentLink } = useFileUpload(
+    currentNote, 
+    editedContent, 
+    setEditedContent, 
+    setUnsavedChanges
+  );
+  
+  const {
+    showSearch,
+    setShowSearch,
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    setSearchResults,
+    currentSearchIndex,
+    handleSearch,
+    nextSearchResult,
+    prevSearchResult
+  } = useNoteSearch(editedContent, textareaRef);
 
   useEffect(() => {
     if (currentNote) {
@@ -80,255 +106,23 @@ const NoteEditor: React.FC = () => {
     }
   };
 
-  const handleSearch = () => {
-    if (!searchQuery || !editedContent) return;
-    
-    const query = searchQuery.toLowerCase();
-    const content = editedContent.toLowerCase();
-    const lines = editedContent.split('\n');
-    
-    const results: {index: number, line: number}[] = [];
-    let currentIndex = 0;
-    
-    lines.forEach((line, lineIndex) => {
-      const lineLower = line.toLowerCase();
-      let position = 0;
-      
-      while (position < lineLower.length) {
-        const foundIndex = lineLower.indexOf(query, position);
-        if (foundIndex === -1) break;
-        
-        results.push({
-          index: currentIndex + foundIndex,
-          line: lineIndex + 1
-        });
-        
-        position = foundIndex + query.length;
-      }
-      
-      currentIndex += line.length + 1;
-    });
-    
-    setSearchResults(results);
-    setCurrentSearchIndex(0);
-    
-    if (results.length > 0) {
-      navigateToSearchResult(results[0]);
-    }
-  };
-
-  const navigateToSearchResult = (result: {index: number, line: number}) => {
-    if (!textareaRef.current) return;
-    textareaRef.current.scrollToSearchResult(result.index, searchQuery.length);
-  };
-  
-  const nextSearchResult = () => {
-    if (searchResults.length === 0) return;
-    
-    const nextIndex = (currentSearchIndex + 1) % searchResults.length;
-    setCurrentSearchIndex(nextIndex);
-    navigateToSearchResult(searchResults[nextIndex]);
-  };
-  
-  const prevSearchResult = () => {
-    if (searchResults.length === 0) return;
-    
-    const prevIndex = (currentSearchIndex - 1 + searchResults.length) % searchResults.length;
-    setCurrentSearchIndex(prevIndex);
-    navigateToSearchResult(searchResults[prevIndex]);
-  };
-
-  useEffect(() => {
-    if (searchQuery && searchQuery.length > 2) {
-      const timer = setTimeout(() => {
-        handleSearch();
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [searchQuery]);
-
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    if (!currentNote || !isEditing) return;
-    
-    const clipboardItems = e.clipboardData.items;
-    let hasHandledImage = false;
-    
-    for (let i = 0; i < clipboardItems.length; i++) {
-      if (clipboardItems[i].type.indexOf('image') === 0) {
-        e.preventDefault();
-        
-        const blob = clipboardItems[i].getAsFile();
-        if (!blob) continue;
-        
-        const timestamp = new Date().getTime();
-        const fileName = `pasted-image-${timestamp}.png`;
-        const file = new File([blob], fileName, { type: 'image/png' });
-        
-        try {
-          const attachment = await addAttachment(currentNote.id, file);
-          const markdownImg = `![${attachment.name}](attachment:${attachment.id})`;
-          
-          if (textareaRef.current) {
-            const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
-            if (textarea) {
-              const cursorPos = textarea.selectionStart;
-              const textBefore = editedContent.substring(0, cursorPos);
-              const textAfter = editedContent.substring(cursorPos);
-              const newContent = textBefore + markdownImg + textAfter;
-              
-              setEditedContent(newContent);
-              setUnsavedChanges(true);
-              
-              setTimeout(() => {
-                textarea.focus();
-                textarea.setSelectionRange(
-                  cursorPos + markdownImg.length,
-                  cursorPos + markdownImg.length
-                );
-              }, 0);
-            }
-          }
-        } catch (err) {
-          console.error('Error handling pasted image:', err);
-        }
-        
-        hasHandledImage = true;
-        break;
-      }
-    }
-    
-    return !hasHandledImage;
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!currentNote || !e.target.files || e.target.files.length === 0) return;
-    
-    const file = e.target.files[0];
-    try {
-      const attachment = await addAttachment(currentNote.id, file);
-      
-      let markdownRef;
-      if (file.type.startsWith('image/')) {
-        markdownRef = `![${attachment.name}](attachment:${attachment.id})`;
-      } else {
-        markdownRef = `[${attachment.name}](attachment:${attachment.id})`;
-      }
-      
-      const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
-      if (textarea) {
-        const cursorPos = textarea.selectionStart;
-        const textBefore = editedContent.substring(0, cursorPos);
-        const textAfter = editedContent.substring(cursorPos);
-        const newContent = textBefore + markdownRef + textAfter;
-        
-        setEditedContent(newContent);
-        setUnsavedChanges(true);
-        
-        setTimeout(() => {
-          textarea.focus();
-          textarea.setSelectionRange(
-            cursorPos + markdownRef.length,
-            cursorPos + markdownRef.length
-          );
-        }, 0);
-      }
-    } catch (err) {
-      console.error('Error uploading file:', err);
-    }
-    
-    e.target.value = '';
-  };
-  
-  const insertAttachmentLink = (attachment: Attachment) => {
-    if (!currentNote || !isEditing) return;
-    
-    let markdownRef;
-    if (attachment.type.startsWith('image/')) {
-      markdownRef = `![${attachment.name}](attachment:${attachment.id})`;
-    } else {
-      markdownRef = `[${attachment.name}](attachment:${attachment.id})`;
-    }
-    
-    const textarea = document.querySelector('.editor-container textarea') as HTMLTextAreaElement;
-    if (textarea) {
-      const cursorPos = textarea.selectionStart;
-      const textBefore = editedContent.substring(0, cursorPos);
-      const textAfter = editedContent.substring(cursorPos);
-      const newContent = textBefore + markdownRef + textAfter;
-      
-      setEditedContent(newContent);
-      setUnsavedChanges(true);
-      setAttachmentsDialogOpen(false);
-      
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(
-          cursorPos + markdownRef.length,
-          cursorPos + markdownRef.length
-        );
-      }, 0);
-    }
-  };
-
   if (isCreatingNewNote) {
     return (
-      <div className="flex flex-col h-full p-4 bg-secondary/30">
-        <div className="flex flex-col items-center justify-center h-full">
-          <h3 className="text-lg font-medium mb-4">Create a New Note</h3>
-          <div className="w-full max-w-md">
-            <input
-              type="text"
-              value={newNoteTitle}
-              onChange={(e) => setNewNoteTitle(e.target.value)}
-              placeholder="Note title"
-              className="w-full p-2 rounded border mb-4"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newNoteTitle.trim()) {
-                  handleCreateNewNote();
-                }
-              }}
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setIsCreatingNewNote(false)}
-                className="px-4 py-2 rounded border"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateNewNote}
-                className="px-4 py-2 rounded bg-primary text-primary-foreground"
-                disabled={!newNoteTitle.trim()}
-              >
-                Create Note
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <NewNoteForm
+        newNoteTitle={newNoteTitle}
+        setNewNoteTitle={setNewNoteTitle}
+        handleCreateNewNote={handleCreateNewNote}
+        setIsCreatingNewNote={setIsCreatingNewNote}
+      />
     );
   }
 
   if (!currentNote && !isCreatingNewNote) {
     return (
-      <div className="flex items-center justify-center h-full w-full bg-secondary/30">
-        <div className="text-center">
-          <h3 className="text-lg font-medium">No note selected</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            Select a note from the sidebar or create a new one.
-          </p>
-          {currentFolder && (
-            <button
-              onClick={() => setIsCreatingNewNote(true)}
-              className="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground"
-            >
-              Create New Note
-            </button>
-          )}
-        </div>
-      </div>
+      <EmptyState
+        currentFolder={currentFolder}
+        setIsCreatingNewNote={setIsCreatingNewNote}
+      />
     );
   }
 
